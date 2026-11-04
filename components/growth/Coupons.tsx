@@ -378,7 +378,7 @@ export function Coupons({
       {/* "YOU WON THIS!" Unlock Celebration Modal */}
       {newlyUnlocked && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-mocha/60 dark:bg-black/75 backdrop-blur-sm animate-in fade-in duration-200"
+          className="fixed inset-0 top-0 left-0 right-0 bottom-0 w-full h-[100dvh] z-50 flex items-center justify-center p-4 bg-mocha/60 dark:bg-black/75 backdrop-blur-sm animate-in fade-in duration-200"
           role="dialog"
           aria-modal="true"
         >
@@ -440,7 +440,7 @@ export function Coupons({
       {/* Detail & Redemption Modal */}
       {selectedCoupon && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-mocha/50 dark:bg-black/70 backdrop-blur-sm animate-in fade-in duration-200"
+          className="fixed inset-0 top-0 left-0 right-0 bottom-0 w-full h-[100dvh] z-50 flex items-center justify-center p-4 bg-mocha/50 dark:bg-black/70 backdrop-blur-sm animate-in fade-in duration-200"
           role="dialog"
           aria-modal="true"
           aria-labelledby="coupon-modal-title"

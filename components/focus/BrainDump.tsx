@@ -76,6 +76,17 @@ export default function BrainDump({
   const activeCount = brainDump.filter((i) => !i.done).length;
   const completedCount = brainDump.filter((i) => i.done).length;
 
+  // Lock body scroll when BrainDump drawer is open
+  useEffect(() => {
+    if (isDrawerOpen) {
+      const original = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = original;
+      };
+    }
+  }, [isDrawerOpen]);
+
   return (
     <>
       {/* Floating Trigger Button (Bottom-Right, above bottom navigation) */}
@@ -114,7 +125,7 @@ export default function BrainDump({
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={{ type: "spring", stiffness: 350, damping: 30 }}
-              className={`fixed inset-y-0 right-0 w-full max-w-sm bg-paper dark:bg-obsidian border-l border-[#EBE7DF] dark:border-[#383530] p-5 shadow-2xl flex flex-col justify-between z-50 ${className}`}
+              className={`fixed inset-y-0 right-0 w-full max-w-sm bg-paper dark:bg-obsidian border-l border-[#EBE7DF] dark:border-[#383530] p-5 pt-[max(1.25rem,env(safe-area-inset-top))] pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-2xl flex flex-col justify-between z-[70] ${className}`}
             >
               {/* Header */}
               <div>

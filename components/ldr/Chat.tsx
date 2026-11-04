@@ -793,16 +793,27 @@ export default function Chat({ isOpen, onClose, className = "" }: ChatProps) {
     };
   }, [activeVoiceNote, isVoiceDisintegrating, triggerVoiceDisintegration]);
 
+  // Lock body scroll when Sanctuary Chat is open
+  useEffect(() => {
+    if (isOpen) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = originalOverflow;
+      };
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex flex-col bg-cream dark:bg-mocha select-none ${className}`}
+      className={`fixed inset-0 top-0 left-0 right-0 bottom-0 w-full h-[100dvh] z-[70] flex flex-col bg-cream dark:bg-mocha select-none ${className}`}
       role="dialog"
       aria-modal="true"
     >
       {/* Top Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-[#EBE7DF] dark:border-[#383530] bg-paper/90 dark:bg-obsidian/90 backdrop-blur-md safe">
+      <div className="flex items-center justify-between px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 border-b border-[#EBE7DF] dark:border-[#383530] bg-paper/95 dark:bg-obsidian/95 backdrop-blur-md">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-full bg-sage/20 text-sage flex items-center justify-center font-bold">
             ❤️
@@ -960,7 +971,7 @@ export default function Chat({ isOpen, onClose, className = "" }: ChatProps) {
       <AnimatePresence>
         {showPhotoOptions && (
           <div
-            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+            className="fixed inset-0 top-0 left-0 right-0 bottom-0 w-full h-[100dvh] z-[80] flex items-end sm:items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
             role="dialog"
             aria-modal="true"
           >
@@ -1018,7 +1029,7 @@ export default function Chat({ isOpen, onClose, className = "" }: ChatProps) {
       <AnimatePresence>
         {isCameraActive && (
           <div
-            className="fixed inset-0 z-50 flex flex-col items-center justify-center p-4 bg-black/90 backdrop-blur-md select-none"
+            className="fixed inset-0 top-0 left-0 right-0 bottom-0 w-full h-[100dvh] z-[80] flex flex-col items-center justify-center p-4 bg-black/90 backdrop-blur-md select-none"
             role="dialog"
             aria-modal="true"
           >
@@ -1091,7 +1102,7 @@ export default function Chat({ isOpen, onClose, className = "" }: ChatProps) {
       <AnimatePresence>
         {developedPolaroid && (
           <div
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md select-none overflow-hidden"
+            className="fixed inset-0 top-0 left-0 right-0 bottom-0 w-full h-[100dvh] z-[80] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md select-none overflow-hidden"
             role="dialog"
             aria-modal="true"
           >
@@ -1214,7 +1225,7 @@ export default function Chat({ isOpen, onClose, className = "" }: ChatProps) {
       <AnimatePresence>
         {activeVoiceNote && (
           <div
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md select-none overflow-hidden"
+            className="fixed inset-0 top-0 left-0 right-0 bottom-0 w-full h-[100dvh] z-[80] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md select-none overflow-hidden"
             role="dialog"
             aria-modal="true"
           >

@@ -72,7 +72,7 @@ export default function SosButton({ onOpenChat, className = "" }: SosButtonProps
       <AnimatePresence>
         {isConfirmOpen && (
           <div
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-mocha/60 dark:bg-black/75 backdrop-blur-sm select-none"
+            className="fixed inset-0 top-0 left-0 right-0 bottom-0 w-full h-[100dvh] z-50 flex items-center justify-center p-4 bg-mocha/60 dark:bg-black/75 backdrop-blur-sm select-none"
             role="dialog"
             aria-modal="true"
           >

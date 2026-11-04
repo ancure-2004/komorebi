@@ -124,6 +124,32 @@ export default function Home() {
     }
   }, [session.ready, session.uid, session.role, router]);
 
+  // Prevent background scrolling whenever any overlay / modal / sheet is open
+  useEffect(() => {
+    const isAnyModalOpen =
+      isEditorOpen ||
+      isChatOpen ||
+      isZenOpen ||
+      isDeskClockOpen ||
+      isCuteBreakOpen ||
+      isBrainDumpOpen;
+
+    if (isAnyModalOpen) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = originalOverflow;
+      };
+    }
+  }, [
+    isEditorOpen,
+    isChatOpen,
+    isZenOpen,
+    isDeskClockOpen,
+    isCuteBreakOpen,
+    isBrainDumpOpen,
+  ]);
+
   const prevPomoPhaseRef = useRef<string>(pomo.phase);
 
   // Background automated 20-20-20 stretch trigger
@@ -300,15 +326,6 @@ export default function Home() {
               <Timeline date={dateStr} onStartFocus={handleStartFocus} />
             ) : (
               <Sunburst date={dateStr} />
-            )}
-
-            {/* Schedule Editor Drawer Modal */}
-            {isEditorOpen && (
-              <div className="fixed inset-0 z-50 flex items-end justify-center bg-mocha/40 dark:bg-black/60 backdrop-blur-sm">
-                <div className="w-full max-w-md max-h-[90vh] overflow-y-auto rounded-t-3xl bg-cream dark:bg-mocha p-4 pb-[max(1.5rem,env(safe-area-inset-bottom,0px))] shadow-2xl">
-                  <ScheduleEditor onClose={() => setIsEditorOpen(false)} />
-                </div>
-              </div>
             )}
           </div>
         )}
@@ -639,6 +656,20 @@ export default function Home() {
 
       {/* Sanctuary Chat Modal */}
       <Chat isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
+
+      {/* Schedule Editor Fullscreen Overlay (Zero top gap, full viewport coverage, no background scrolling) */}
+      {isEditorOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Schedule Editor"
+          className="fixed inset-0 top-0 left-0 right-0 bottom-0 w-full h-[100dvh] z-[70] flex flex-col bg-cream dark:bg-mocha select-none overflow-hidden"
+        >
+          <div className="flex-1 overflow-y-auto w-full max-w-md mx-auto p-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(2.5rem,env(safe-area-inset-bottom))]">
+            <ScheduleEditor onClose={() => setIsEditorOpen(false)} />
+          </div>
+        </div>
+      )}
 
       {/* Fixed Bottom Navigation Bar */}
       <nav

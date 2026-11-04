@@ -291,12 +291,13 @@ export default function MorningFlex({
               className="w-full h-2 bg-sage/20 dark:bg-sage/30 rounded-lg appearance-none cursor-pointer accent-sage"
             />
 
-            <div className="flex justify-between text-[10px] font-sans text-ink/50 dark:text-cream/50 px-0.5">
-              <span>0h</span>
-              <span>1h</span>
-              <span>2h (Default)</span>
-              <span>4h</span>
-              <span>6h</span>
+            <div className="relative w-full h-4 text-[10px] font-sans text-ink/50 dark:text-cream/50 mt-1 select-none">
+              <span className="absolute left-0">0h</span>
+              <span className="absolute left-[16.67%] -translate-x-1/2">1h</span>
+              <span className="absolute left-[33.33%] -translate-x-1/2 font-medium text-sage dark:text-matcha">2h (Default)</span>
+              <span className="absolute left-[50%] -translate-x-1/2">3h</span>
+              <span className="absolute left-[66.67%] -translate-x-1/2">4h</span>
+              <span className="absolute right-0">6h</span>
             </div>
           </div>
         </div>

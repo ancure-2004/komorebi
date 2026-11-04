@@ -140,7 +140,7 @@ export function CuteBreakModal({
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-mocha/60 dark:bg-black/75 backdrop-blur-sm select-none">
+        <div className="fixed inset-0 top-0 left-0 right-0 bottom-0 w-full h-[100dvh] z-[110] flex items-center justify-center p-4 bg-mocha/60 dark:bg-black/75 backdrop-blur-sm select-none">
           <motion.div
             initial={{ opacity: 0, scale: 0.92, y: 15 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Play, Pause, Sparkles, Clock, Calendar } from "lucide-react";
 import { useMedia, useWakeLock, useNow } from "@/lib/hooks";
@@ -96,13 +96,24 @@ export default function DeskClock({ forceOpen = false, onClose, className = "" }
     }
   };
 
+  // Lock body scroll when DeskClock is open
+  useEffect(() => {
+    if (show) {
+      const original = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = original;
+      };
+    }
+  }, [show]);
+
   if (!show) {
     return null;
   }
 
   return (
     <div
-      className={`fixed inset-0 z-50 bg-[#161513] text-[#FDFBF7] flex flex-col justify-between p-4 sm:p-6 overflow-hidden select-none ${className}`}
+      className={`fixed inset-0 top-0 left-0 right-0 bottom-0 w-full h-[100dvh] z-[70] bg-[#161513] text-[#FDFBF7] flex flex-col justify-between pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))] px-4 sm:px-6 overflow-hidden select-none ${className}`}
     >
       {/* Top Header */}
       <div className="flex items-center justify-between w-full">

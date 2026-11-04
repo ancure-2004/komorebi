@@ -229,23 +229,25 @@ function SortableBlockRow({
       </div>
 
       {/* Bottom Row: Duration Steppers (-15m, -5m, value, +5m, +15m) */}
-      <div className="pt-2 border-t border-[#EBE7DF] dark:border-[#383530] flex items-center justify-between gap-2">
-        <div className="flex items-center gap-1 text-xs font-sans text-ink/60 dark:text-cream/60">
-          <Clock className="w-3.5 h-3.5 text-sage" />
-          <span>Duration:</span>
-          <span className="font-semibold text-ink dark:text-cream tabular-nums ml-1">
+      <div className="pt-2.5 border-t border-[#EBE7DF] dark:border-[#383530] space-y-2">
+        <div className="flex items-center justify-between text-xs font-sans text-ink/70 dark:text-cream/70">
+          <div className="flex items-center gap-1.5 font-medium">
+            <Clock className="w-3.5 h-3.5 text-sage" />
+            <span>Duration:</span>
+          </div>
+          <span className="font-semibold text-ink dark:text-cream tabular-nums px-2 py-0.5 rounded-md bg-sage/10 dark:bg-sage/20 text-sage dark:text-matcha">
             {fmtHM(block.duration * 60000)} ({block.duration}m)
           </span>
         </div>
 
-        {/* Stepper Buttons (>=44px touch targets) */}
-        <div className="flex items-center gap-1">
+        {/* Stepper Buttons (4 equal-width buttons in a grid, no overflow, touch-friendly) */}
+        <div className="grid grid-cols-4 gap-1.5 w-full">
           <button
             type="button"
             disabled={block.duration <= 15}
             onClick={() => onDurationChange(block.id, -15)}
             aria-label={`Decrease ${block.title} by 15 minutes`}
-            className="min-h-[44px] min-w-[36px] px-2 rounded-lg bg-paper dark:bg-obsidian border border-[#EBE7DF] dark:border-[#383530] hover:bg-sage/10 text-[11px] font-sans font-medium text-ink dark:text-cream disabled:opacity-30 disabled:cursor-not-allowed tabular-nums flex items-center justify-center active:scale-95 transition-all"
+            className="min-h-[40px] px-2 rounded-lg bg-paper dark:bg-obsidian border border-[#EBE7DF] dark:border-[#383530] hover:bg-sage/10 text-xs font-sans font-semibold text-ink dark:text-cream disabled:opacity-30 disabled:cursor-not-allowed tabular-nums flex items-center justify-center active:scale-95 transition-all shadow-xs"
           >
             -15m
           </button>
@@ -254,7 +256,7 @@ function SortableBlockRow({
             disabled={block.duration <= 15}
             onClick={() => onDurationChange(block.id, -5)}
             aria-label={`Decrease ${block.title} by 5 minutes`}
-            className="min-h-[44px] min-w-[32px] px-1.5 rounded-lg bg-paper dark:bg-obsidian border border-[#EBE7DF] dark:border-[#383530] hover:bg-sage/10 text-[11px] font-sans font-medium text-ink dark:text-cream disabled:opacity-30 disabled:cursor-not-allowed tabular-nums flex items-center justify-center active:scale-95 transition-all"
+            className="min-h-[40px] px-2 rounded-lg bg-paper dark:bg-obsidian border border-[#EBE7DF] dark:border-[#383530] hover:bg-sage/10 text-xs font-sans font-semibold text-ink dark:text-cream disabled:opacity-30 disabled:cursor-not-allowed tabular-nums flex items-center justify-center active:scale-95 transition-all shadow-xs"
           >
             -5m
           </button>
@@ -262,7 +264,7 @@ function SortableBlockRow({
             type="button"
             onClick={() => onDurationChange(block.id, 5)}
             aria-label={`Increase ${block.title} by 5 minutes`}
-            className="min-h-[44px] min-w-[32px] px-1.5 rounded-lg bg-paper dark:bg-obsidian border border-[#EBE7DF] dark:border-[#383530] hover:bg-sage/10 text-[11px] font-sans font-medium text-ink dark:text-cream tabular-nums flex items-center justify-center active:scale-95 transition-all"
+            className="min-h-[40px] px-2 rounded-lg bg-paper dark:bg-obsidian border border-[#EBE7DF] dark:border-[#383530] hover:bg-sage/10 text-xs font-sans font-semibold text-ink dark:text-cream tabular-nums flex items-center justify-center active:scale-95 transition-all shadow-xs"
           >
             +5m
           </button>
@@ -270,7 +272,7 @@ function SortableBlockRow({
             type="button"
             onClick={() => onDurationChange(block.id, 15)}
             aria-label={`Increase ${block.title} by 15 minutes`}
-            className="min-h-[44px] min-w-[36px] px-2 rounded-lg bg-paper dark:bg-obsidian border border-[#EBE7DF] dark:border-[#383530] hover:bg-sage/10 text-[11px] font-sans font-medium text-ink dark:text-cream tabular-nums flex items-center justify-center active:scale-95 transition-all"
+            className="min-h-[40px] px-2 rounded-lg bg-paper dark:bg-obsidian border border-[#EBE7DF] dark:border-[#383530] hover:bg-sage/10 text-xs font-sans font-semibold text-ink dark:text-cream tabular-nums flex items-center justify-center active:scale-95 transition-all shadow-xs"
           >
             +15m
           </button>

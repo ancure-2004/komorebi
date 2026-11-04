@@ -169,7 +169,7 @@ export default function Envelope({ date: propDate, className = "" }: EnvelopePro
       <AnimatePresence>
         {isOpen && (
           <div
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-mocha/60 dark:bg-black/80 backdrop-blur-md select-none overflow-y-auto"
+            className="fixed inset-0 top-0 left-0 right-0 bottom-0 w-full h-[100dvh] z-50 flex items-center justify-center p-4 bg-mocha/60 dark:bg-black/80 backdrop-blur-md select-none overflow-y-auto"
             role="dialog"
             aria-modal="true"
           >
