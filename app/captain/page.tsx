@@ -35,6 +35,13 @@ export default function CaptainPortalPage() {
     return () => window.removeEventListener("komorebi:open-chat", handleOpenChat);
   }, []);
 
+  // Redirect to /login if unauthenticated
+  useEffect(() => {
+    if (session.ready && !session.uid) {
+      router.replace("/login");
+    }
+  }, [session.ready, session.uid, router]);
+
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     router.push("/login");

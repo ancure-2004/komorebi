@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   CalendarClock,
@@ -25,7 +26,7 @@ import { useNow } from "@/lib/hooks";
 import { useApp, EMPTY_DAY } from "@/lib/store";
 import { streak, totalFocusMs } from "@/lib/stats";
 import { useRoom } from "@/lib/room";
-import { useSession } from "@/lib/supabase";
+import { supabase, useSession } from "@/lib/supabase";
 
 // Flow Components
 import Hero from "@/components/Hero";
@@ -110,6 +111,18 @@ export default function Home() {
   const currentStreak = streak(days, dateStr);
   const room = useRoom();
   const session = useSession();
+  const router = useRouter();
+
+  // Authentication gate: redirect to /login if unauthenticated, or to /captain if captain
+  useEffect(() => {
+    if (session.ready) {
+      if (!session.uid) {
+        router.replace("/login");
+      } else if (session.role === "captain") {
+        router.replace("/captain");
+      }
+    }
+  }, [session.ready, session.uid, session.role, router]);
 
   const prevPomoPhaseRef = useRef<string>(pomo.phase);
 
@@ -168,6 +181,22 @@ export default function Home() {
       setActiveTab("focus");
     }
   };
+
+  // Show calm brand loader while resolving session or if not logged in
+  if (!session.ready || !session.uid || session.role === "captain") {
+    return (
+      <div className="min-h-screen bg-cream dark:bg-mocha flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 rounded-2xl bg-sage/20 border border-sage/40 animate-pulse flex items-center justify-center">
+            <span className="text-sage text-lg font-serif">木</span>
+          </div>
+          <span className="text-xs font-serif text-ink/60 dark:text-cream/60 tracking-widest">
+            KOMOREBI
+          </span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-screen max-w-md mx-auto relative px-4 pt-5 pb-[calc(7.5rem+env(safe-area-inset-bottom,0px))] select-none">
@@ -565,14 +594,16 @@ export default function Home() {
                           Role: {session.role || "Member"}
                         </span>
                       </div>
-                      {session.role === "captain" && (
-                        <Link
-                          href="/captain"
-                          className="px-3 py-1.5 rounded-lg bg-sage text-cream text-xs font-medium hover:bg-sage/90"
-                        >
-                          Captain Portal ⚓
-                        </Link>
-                      )}
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          await supabase.auth.signOut();
+                          router.replace("/login");
+                        }}
+                        className="px-3 py-1.5 rounded-lg border border-red-500/30 text-red-500 text-xs font-medium hover:bg-red-500/10 active:scale-95 transition-all"
+                      >
+                        Sign Out
+                      </button>
                     </div>
                   ) : (
                     <Link

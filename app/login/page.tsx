@@ -20,9 +20,9 @@ export default function LoginPage() {
   useEffect(() => {
     if (session.ready && session.uid) {
       if (session.role === "captain") {
-        router.push("/captain");
+        router.replace("/captain");
       } else {
-        router.push("/");
+        router.replace("/");
       }
     }
   }, [session, router]);
