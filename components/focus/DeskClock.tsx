@@ -96,17 +96,6 @@ export default function DeskClock({ forceOpen = false, onClose, className = "" }
     }
   };
 
-  // Lock body scroll when DeskClock is open
-  useEffect(() => {
-    if (show) {
-      const original = document.body.style.overflow;
-      document.body.style.overflow = "hidden";
-      return () => {
-        document.body.style.overflow = original;
-      };
-    }
-  }, [show]);
-
   if (!show) {
     return null;
   }

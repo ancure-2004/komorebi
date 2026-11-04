@@ -76,17 +76,6 @@ export default function BrainDump({
   const activeCount = brainDump.filter((i) => !i.done).length;
   const completedCount = brainDump.filter((i) => i.done).length;
 
-  // Lock body scroll when BrainDump drawer is open
-  useEffect(() => {
-    if (isDrawerOpen) {
-      const original = document.body.style.overflow;
-      document.body.style.overflow = "hidden";
-      return () => {
-        document.body.style.overflow = original;
-      };
-    }
-  }, [isDrawerOpen]);
-
   return (
     <>
       {/* Floating Trigger Button (Bottom-Right, above bottom navigation) */}

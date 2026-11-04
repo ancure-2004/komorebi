@@ -60,6 +60,7 @@ import SyncOrb from "@/components/ldr/SyncOrb";
 // PWA & Notifications
 import PwaRegister from "@/components/PwaRegister";
 import NotificationBell from "@/components/NotificationBell";
+import WelcomeExperience from "@/components/welcome/WelcomeExperience";
 
 export type NavTab = "flow" | "focus" | "growth" | "sanctuary" | "settings";
 
@@ -80,6 +81,7 @@ export default function Home() {
   const [isDeskClockOpen, setIsDeskClockOpen] = useState(false);
   const [isBrainDumpOpen, setIsBrainDumpOpen] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [isWelcomeOpen, setIsWelcomeOpen] = useState(false);
 
   // 20-20-20 Automated Care Break Modal State
   const [isCuteBreakOpen, setIsCuteBreakOpen] = useState(false);
@@ -124,6 +126,26 @@ export default function Home() {
     }
   }, [session.ready, session.uid, session.role, router]);
 
+  // Check if Captain has enabled the Grand Welcome Ceremony for Her
+  useEffect(() => {
+    let mounted = true;
+    async function checkWelcome() {
+      try {
+        const res = await fetch("/api/welcome");
+        const data = await res.json().catch(() => ({}));
+        if (mounted && data?.enabled) {
+          setIsWelcomeOpen(true);
+        }
+      } catch (err) {
+        console.warn("Could not check welcome status:", err);
+      }
+    }
+    checkWelcome();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   // Prevent background scrolling whenever any overlay / modal / sheet is open
   useEffect(() => {
     const isAnyModalOpen =
@@ -132,15 +154,22 @@ export default function Home() {
       isZenOpen ||
       isDeskClockOpen ||
       isCuteBreakOpen ||
-      isBrainDumpOpen;
+      isBrainDumpOpen ||
+      isWelcomeOpen;
 
     if (isAnyModalOpen) {
-      const originalOverflow = document.body.style.overflow;
       document.body.style.overflow = "hidden";
-      return () => {
-        document.body.style.overflow = originalOverflow;
-      };
+    } else {
+      document.body.style.overflow = "";
+      document.documentElement.style.overflow = "";
+      document.body.style.touchAction = "";
     }
+
+    return () => {
+      document.body.style.overflow = "";
+      document.documentElement.style.overflow = "";
+      document.body.style.touchAction = "";
+    };
   }, [
     isEditorOpen,
     isChatOpen,
@@ -148,6 +177,7 @@ export default function Home() {
     isDeskClockOpen,
     isCuteBreakOpen,
     isBrainDumpOpen,
+    isWelcomeOpen,
   ]);
 
   const prevPomoPhaseRef = useRef<string>(pomo.phase);
@@ -670,6 +700,12 @@ export default function Home() {
           </div>
         </div>
       )}
+
+      {/* Grand Welcome Ceremony & Guided Tour for Her */}
+      <WelcomeExperience
+        isOpen={isWelcomeOpen}
+        onComplete={() => setIsWelcomeOpen(false)}
+      />
 
       {/* Fixed Bottom Navigation Bar */}
       <nav

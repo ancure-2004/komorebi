@@ -23,6 +23,7 @@ import CouponManager from "@/components/captain/CouponManager";
 import SyncOrb from "@/components/ldr/SyncOrb";
 import Chat from "@/components/ldr/Chat";
 import NotificationBell from "@/components/NotificationBell";
+import WelcomeToggle from "@/components/captain/WelcomeToggle";
 
 export default function CaptainPortalPage() {
   const router = useRouter();
@@ -135,6 +136,9 @@ export default function CaptainPortalPage() {
 
       {/* 2. Quick Drops & Study Whispers Dispatcher */}
       <Dispatcher />
+
+      {/* Grand Welcome Ceremony & Tour Control */}
+      <WelcomeToggle />
 
       {/* 3. Sync Touch Orb for Captain */}
       <div className="p-5 rounded-2xl bg-paper dark:bg-obsidian border border-sage/30 text-center space-y-3">

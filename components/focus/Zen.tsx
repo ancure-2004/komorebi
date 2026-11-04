@@ -33,18 +33,15 @@ export default function Zen({ isOpen, onClose, className = "" }: ZenProps) {
   // Prevent background scroll when Zen mode is active
   useEffect(() => {
     if (!isOpen) return;
-    const origBodyOverflow = document.body.style.overflow;
-    const origBodyTouch = document.body.style.touchAction;
-    const origDocOverflow = document.documentElement.style.overflow;
 
     document.body.style.overflow = "hidden";
     document.body.style.touchAction = "none";
     document.documentElement.style.overflow = "hidden";
 
     return () => {
-      document.body.style.overflow = origBodyOverflow;
-      document.body.style.touchAction = origBodyTouch;
-      document.documentElement.style.overflow = origDocOverflow;
+      document.body.style.overflow = "";
+      document.body.style.touchAction = "";
+      document.documentElement.style.overflow = "";
     };
   }, [isOpen]);
 
