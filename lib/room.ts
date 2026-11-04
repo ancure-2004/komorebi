@@ -104,38 +104,13 @@ export function joinRoom(role: UserRole, handlers: RoomEvents): RealtimeChannel 
 }
 
 /**
- * Broadcasts an event over the given Realtime channel and persists a fallback
- * signal into PostgreSQL messages table for 100% guaranteed dual-channel delivery.
+ * Broadcasts an event over the given Realtime channel.
  */
 export async function send(
   ch: RealtimeChannel | null,
   event: string,
   payload: object = {}
 ): Promise<string | null> {
-  const isCaptain =
-    typeof window !== "undefined" && window.location.pathname.startsWith("/captain");
-  const activeUid = isCaptain
-    ? "b8eb2e9f-ad30-49a3-8cff-1e90445f04e8"
-    : "a0ba3cb9-5397-498b-8740-5b9842381d15";
-
-  // 1. Dual-channel persistence: insert signal row into messages table
-  try {
-    supabase
-      .from("messages")
-      .insert({
-        sender_id: activeUid,
-        sender: activeUid,
-        type: "text",
-        kind: "text",
-        text: `SIGNAL:${JSON.stringify({ event, payload, ts: Date.now() })}`,
-        body: `SIGNAL:${JSON.stringify({ event, payload, ts: Date.now() })}`,
-      })
-      .then(() => {})
-      .catch((err) => console.warn("[Komorebi Room] Signal insert note:", err));
-  } catch {
-    // Non-blocking
-  }
-
   // 2. Peer-to-peer WebSocket broadcast delivery
   if (!ch) {
     return null;
@@ -158,134 +133,90 @@ interface RoomProviderProps {
   children: ReactNode;
 }
 
+// Module-level singleton room channel.
+// React StrictMode (dev) mounts effects twice; tearing the channel down in a
+// cleanup races supabase.channel() reusing the same topic object, leaving the
+// app on a CLOSED channel where sends fall back to REST and nothing is received.
+// One long-lived channel per tab avoids that entirely.
+const roomListeners = new Set<RoomEvents>();
+const roomStatusSubs = new Set<(subscribed: boolean) => void>();
+const roomPresenceSubs = new Set<(state: PresenceState) => void>();
+let roomChannel: RealtimeChannel | null = null;
+let roomSubscribed = false;
+
+function emit<K extends keyof RoomEvents>(key: K, payload?: unknown) {
+  roomListeners.forEach((l) => {
+    const fn = l[key] as ((p?: unknown) => void) | undefined;
+    fn?.(payload);
+  });
+}
+
+function getRoomChannel(role: UserRole): RealtimeChannel {
+  if (roomChannel) return roomChannel;
+  const ch = supabase.channel("komorebi:room", {
+    config: { broadcast: { self: false }, presence: { key: role } },
+  });
+  roomChannel = ch;
+  ch.on("broadcast", { event: "whisper" }, ({ payload }) => emit("onWhisper", payload))
+    .on("broadcast", { event: "drop" }, ({ payload }) => emit("onDrop", payload))
+    .on("broadcast", { event: "touch" }, ({ payload }) => emit("onTouch", payload))
+    .on("broadcast", { event: "sos" }, () => emit("onSos"))
+    .on("broadcast", { event: "chat" }, ({ payload }) => emit("onChat", payload))
+    .on("presence", { event: "sync" }, () => {
+      const state = ch.presenceState();
+      roomPresenceSubs.forEach((fn) => fn(state));
+      emit("onPresence", state);
+    })
+    .subscribe((status) => {
+      roomSubscribed = status === "SUBSCRIBED";
+      roomStatusSubs.forEach((fn) => fn(roomSubscribed));
+      if (status === "SUBSCRIBED") {
+        ch.track({ role, label: "Online", ts: Date.now() });
+      }
+    });
+  return ch;
+}
+
 /**
- * React Provider managing the real-time presence and broadcast connection.
- * Auto-resolves active role (captain vs her) so it connects immediately even before login.
+ * React Provider exposing the shared real-time room connection.
+ * Role is inferred from the route: /captain is captain, everything else is her.
  */
 export function RoomProvider({ role: propRole, children }: RoomProviderProps) {
   const [presence, setPresence] = useState<PresenceState>({});
-  const [isSubscribed, setIsSubscribed] = useState(false);
-  const channelRef = useRef<RealtimeChannel | null>(null);
+  const [isSubscribed, setIsSubscribed] = useState(roomSubscribed);
+  const channelRef = useRef<RealtimeChannel | null>(roomChannel);
 
-  // Inferred role: fallback to URL pathname or default to 'her'
   const activeRole: UserRole =
     propRole ||
     (typeof window !== "undefined" && window.location.pathname.startsWith("/captain")
       ? "captain"
       : "her");
 
-  // Registered listeners set
-  const listenersRef = useRef<Set<RoomEvents>>(new Set());
   const directHandlersRef = useRef<RoomEvents>({});
-  const seenSignalsRef = useRef<Set<string>>(new Set());
 
   const registerHandlers = useCallback((handlers: RoomEvents) => {
-    listenersRef.current.add(handlers);
+    roomListeners.add(handlers);
     return () => {
-      listenersRef.current.delete(handlers);
+      roomListeners.delete(handlers);
     };
   }, []);
 
   useEffect(() => {
-    // Connect to shared broadcast & presence channel
-    const ch = supabase.channel("komorebi:room", {
-      config: {
-        broadcast: { self: false },
-        presence: { key: activeRole },
-      },
-    });
-
-    channelRef.current = ch;
-
-    ch.on("broadcast", { event: "whisper" }, ({ payload }) => {
-      directHandlersRef.current.onWhisper?.(payload as WhisperPayload);
-      listenersRef.current.forEach((l) => l.onWhisper?.(payload as WhisperPayload));
-    })
-      .on("broadcast", { event: "drop" }, ({ payload }) => {
-        directHandlersRef.current.onDrop?.(payload as DropPayload);
-        listenersRef.current.forEach((l) => l.onDrop?.(payload as DropPayload));
-      })
-      .on("broadcast", { event: "touch" }, ({ payload }) => {
-        directHandlersRef.current.onTouch?.(payload as TouchPayload);
-        listenersRef.current.forEach((l) => l.onTouch?.(payload as TouchPayload));
-      })
-      .on("broadcast", { event: "sos" }, () => {
-        directHandlersRef.current.onSos?.();
-        listenersRef.current.forEach((l) => l.onSos?.());
-      })
-      .on("broadcast", { event: "chat" }, ({ payload }) => {
-        directHandlersRef.current.onChat?.(payload as ChatPayload);
-        listenersRef.current.forEach((l) => l.onChat?.(payload as ChatPayload));
-      })
-      .on("presence", { event: "sync" }, () => {
-        const state = ch.presenceState();
-        setPresence(state);
-        directHandlersRef.current.onPresence?.(state);
-        listenersRef.current.forEach((l) => l.onPresence?.(state));
-      })
-      // Dual-channel Postgres Changes fallback for 100% guaranteed delivery
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "messages" },
-        (p) => {
-          const text = (p.new as { text?: string; body?: string })?.text || (p.new as { text?: string; body?: string })?.body || "";
-          if (typeof text === "string" && text.startsWith("SIGNAL:")) {
-            try {
-              const data = JSON.parse(text.substring(7));
-              const event = data.event;
-              const payload = data.payload || {};
-
-              const isCap =
-                typeof window !== "undefined" &&
-                window.location.pathname.startsWith("/captain");
-              const currentMe = isCap ? "captain" : "her";
-
-              // Do not notify self of own touch events
-              if (event === "touch" && payload.who === currentMe) return;
-
-              const signalKey = `${event}-${JSON.stringify(payload)}-${Math.floor(
-                (data.ts || Date.now()) / 2500
-              )}`;
-              if (seenSignalsRef.current.has(signalKey)) return;
-              seenSignalsRef.current.add(signalKey);
-              setTimeout(() => seenSignalsRef.current.delete(signalKey), 5000);
-
-              if (event === "drop") {
-                directHandlersRef.current.onDrop?.(payload as DropPayload);
-                listenersRef.current.forEach((l) => l.onDrop?.(payload as DropPayload));
-              } else if (event === "whisper") {
-                directHandlersRef.current.onWhisper?.(payload as WhisperPayload);
-                listenersRef.current.forEach((l) => l.onWhisper?.(payload as WhisperPayload));
-              } else if (event === "touch") {
-                directHandlersRef.current.onTouch?.(payload as TouchPayload);
-                listenersRef.current.forEach((l) => l.onTouch?.(payload as TouchPayload));
-              } else if (event === "sos") {
-                directHandlersRef.current.onSos?.();
-                listenersRef.current.forEach((l) => l.onSos?.());
-              } else if (event === "chat") {
-                directHandlersRef.current.onChat?.(payload as ChatPayload);
-                listenersRef.current.forEach((l) => l.onChat?.(payload as ChatPayload));
-              }
-            } catch (err) {
-              console.warn("[Komorebi Room] Signal parse note:", err);
-            }
-          }
-        }
-      )
-      .subscribe((status, err) => {
-        console.log(`[Komorebi Room] Channel status (${activeRole}):`, status, err || "");
-        if (status === "SUBSCRIBED") {
-          setIsSubscribed(true);
-          ch.track({ role: activeRole, label: "Online", ts: Date.now() });
-        } else if (status === "CLOSED" || status === "CHANNEL_ERROR") {
-          setIsSubscribed(false);
-        }
-      });
-
+    channelRef.current = getRoomChannel(activeRole);
+    const direct: RoomEvents = {
+      onWhisper: (p) => directHandlersRef.current.onWhisper?.(p),
+      onDrop: (p) => directHandlersRef.current.onDrop?.(p),
+      onTouch: (p) => directHandlersRef.current.onTouch?.(p),
+      onSos: () => directHandlersRef.current.onSos?.(),
+      onChat: (p) => directHandlersRef.current.onChat?.(p),
+    };
+    roomListeners.add(direct);
+    roomStatusSubs.add(setIsSubscribed);
+    roomPresenceSubs.add(setPresence);
     return () => {
-      channelRef.current = null;
-      setIsSubscribed(false);
-      supabase.removeChannel(ch);
+      roomListeners.delete(direct);
+      roomStatusSubs.delete(setIsSubscribed);
+      roomPresenceSubs.delete(setPresence);
     };
   }, [activeRole]);
 

@@ -23,11 +23,15 @@ export default function Telemetry() {
   const day = days[dateStr];
 
   const lastDbUpdateRef = useRef<number>(0);
+  const lastTrackedPayloadRef = useRef<string>("");
 
   const pomoRunning = pomo.phase === "focus" && pomo.pausedLeftMs === null;
   const flexRunning = Boolean(day?.flexRunningSince);
+  const { isSubscribed, role: roomRole, track } = room;
 
   useEffect(() => {
+    // Only track Her study telemetry (never on /captain)
+    if (roomRole === "captain") return;
     // If her privacy setting turns off telemetry, do nothing
     if (settings.shareStatus === false) return;
 
@@ -48,9 +52,11 @@ export default function Telemetry() {
       emoji = flexRunning ? "⏱️" : "☀️";
     }
 
-    // 1. Live presence update over Realtime
-    if (room.isSubscribed) {
-      room.track({
+    // 1. Live presence update over Realtime (only when state changes)
+    const payloadKey = `${label}|${emoji}|${pomoRunning}`;
+    if (isSubscribed && lastTrackedPayloadRef.current !== payloadKey) {
+      lastTrackedPayloadRef.current = payloadKey;
+      track({
         role: "her",
         label,
         emoji,
@@ -76,7 +82,9 @@ export default function Telemetry() {
     }
   }, [
     session.uid,
-    room,
+    isSubscribed,
+    roomRole,
+    track,
     settings.shareStatus,
     pomoRunning,
     flexRunning,
