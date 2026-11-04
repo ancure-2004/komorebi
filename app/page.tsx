@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import Link from "next/link";
 import {
   CalendarClock,
   Timer,
@@ -17,12 +18,14 @@ import {
   Sparkles,
   Maximize2,
   Monitor,
+  MessageCircle,
 } from "lucide-react";
 import { fmtClock, minutesIST, todayKey } from "@/lib/time";
 import { useNow } from "@/lib/hooks";
 import { useApp, EMPTY_DAY } from "@/lib/store";
 import { streak, totalFocusMs } from "@/lib/stats";
 import { useRoom } from "@/lib/room";
+import { useSession } from "@/lib/supabase";
 
 // Flow Components
 import Hero from "@/components/Hero";
@@ -46,6 +49,15 @@ import Coupons from "@/components/growth/Coupons";
 import Reflection from "@/components/growth/Reflection";
 import StoryCard from "@/components/growth/StoryCard";
 
+// LDR & Sanctuary Components
+import Envelope from "@/components/ldr/Envelope";
+import Capsules from "@/components/ldr/Capsules";
+import Drops from "@/components/ldr/Drops";
+import Whisper from "@/components/ldr/Whisper";
+import SosButton from "@/components/ldr/SosButton";
+import Chat from "@/components/ldr/Chat";
+import SyncOrb from "@/components/ldr/SyncOrb";
+
 // PWA
 import PwaRegister from "@/components/PwaRegister";
 
@@ -58,6 +70,7 @@ export default function Home() {
   const [isZenOpen, setIsZenOpen] = useState(false);
   const [isDeskClockOpen, setIsDeskClockOpen] = useState(false);
   const [isBrainDumpOpen, setIsBrainDumpOpen] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
 
   // 20-20-20 Automated Care Break Modal State
   const [isCuteBreakOpen, setIsCuteBreakOpen] = useState(false);
@@ -71,6 +84,7 @@ export default function Home() {
   const todayState = days[dateStr];
   const currentStreak = streak(days, dateStr);
   const room = useRoom();
+  const session = useSession();
 
   const prevPomoPhaseRef = useRef<string>(pomo.phase);
 
@@ -149,6 +163,9 @@ export default function Home() {
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Emergency SOS Button */}
+          <SosButton onOpenChat={() => setIsChatOpen(true)} />
+
           {/* Streak Indicator */}
           <div
             title={`${currentStreak} day streak`}
@@ -307,6 +324,10 @@ export default function Home() {
         {/* TAB 4: SANCTUARY */}
         {activeTab === "sanctuary" && (
           <div className="space-y-4">
+            {/* Morning Letter & Polaroid from Captain */}
+            <Envelope date={dateStr} />
+
+            {/* Live Presence & Emotional Bridge Card */}
             <div className="rounded-2xl bg-paper dark:bg-obsidian border border-sage/30 p-5 shadow-sm space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-sakura">
@@ -315,16 +336,16 @@ export default function Home() {
                     Long-Distance Sanctuary
                   </span>
                 </div>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-sage/10 text-sage dark:text-matcha">
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-sage/10 text-sage dark:text-matcha">
                   {room.isSubscribed ? "Connected" : "Standing By"}
                 </span>
               </div>
 
-              <p className="text-xs text-ink/70 dark:text-cream/70 leading-relaxed">
+              <p className="text-xs text-ink/70 dark:text-cream/70 leading-relaxed font-sans">
                 A private emotional bridge across the miles. During study sessions, silent whispers, floating hugs, and emergency support are kept one tap away.
               </p>
 
-              <div className="p-3.5 rounded-xl bg-cream/60 dark:bg-mocha/60 border border-[#EBE7DF] dark:border-[#383530] flex items-center justify-between text-xs">
+              <div className="p-3 rounded-xl bg-cream/60 dark:bg-mocha/60 border border-[#EBE7DF] dark:border-[#383530] flex items-center justify-between text-xs">
                 <span className="text-ink/60 dark:text-cream/60">Live Presence</span>
                 <span className="font-medium text-sage dark:text-matcha flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full bg-sage animate-ping" />
@@ -333,15 +354,40 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="p-5 rounded-2xl bg-paper dark:bg-obsidian border border-[#EBE7DF] dark:border-[#383530] text-center space-y-2">
-              <Sparkles className="w-6 h-6 text-sage mx-auto" />
-              <h4 className="text-sm font-serif font-semibold text-ink dark:text-cream">
-                Phase 3 LDR Bridge Ready
+            {/* Sanctuary Chat Trigger Card */}
+            <button
+              type="button"
+              onClick={() => setIsChatOpen(true)}
+              className="w-full p-4 rounded-2xl bg-gradient-to-r from-sage/15 via-paper to-sakura/15 dark:from-sage/10 dark:via-obsidian dark:to-sakura/10 border border-sage/40 flex items-center justify-between shadow-sm hover:border-sage active:scale-[0.99] transition-all"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-sage/20 text-sage flex items-center justify-center">
+                  <MessageCircle className="w-5 h-5" />
+                </div>
+                <div className="text-left">
+                  <h4 className="font-serif text-sm font-semibold text-ink dark:text-cream">
+                    Sanctuary Chat
+                  </h4>
+                  <p className="text-[11px] text-ink/60 dark:text-cream/60 font-sans">
+                    Disappearing text, view-once Polaroids & voice notes
+                  </p>
+                </div>
+              </div>
+              <span className="text-xs font-semibold text-sage dark:text-matcha px-3 py-1.5 rounded-xl bg-paper dark:bg-obsidian border border-sage/30">
+                Open
+              </span>
+            </button>
+
+            {/* Sync Touch Orb */}
+            <div className="p-5 rounded-2xl bg-paper dark:bg-obsidian border border-sage/30 text-center space-y-3">
+              <h4 className="font-serif text-sm font-semibold text-ink dark:text-cream">
+                Synchronous Heartbeat Touch
               </h4>
-              <p className="text-xs text-ink/60 dark:text-cream/60 max-w-xs mx-auto">
-                Real-time Sync Touch, disappearing Polaroids, one-time voice notes, and Morning Envelope are scaffolded and ready for your go-ahead.
-              </p>
+              <SyncOrb me="her" />
             </div>
+
+            {/* Time-Locked Capsules */}
+            <Capsules />
           </div>
         )}
 
@@ -411,6 +457,34 @@ export default function Home() {
                   </button>
                 </div>
 
+                {/* Live Status Sharing Toggle */}
+                <div className="flex items-center justify-between py-2 border-b border-[#EBE7DF] dark:border-[#383530]">
+                  <div className="pr-3">
+                    <span className="block font-medium text-sm text-ink dark:text-cream">
+                      Share Live Study Status with Captain
+                    </span>
+                    <span className="text-[11px] text-ink/60 dark:text-cream/60 leading-tight block mt-0.5">
+                      Lets Captain see which schedule block you are in and if Pomodoro is active. No screen or location access.
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      updateSettings((s) => ({
+                        ...s,
+                        shareStatus: s.shareStatus === false ? true : false,
+                      }))
+                    }
+                    className={`w-12 h-6 flex items-center rounded-full p-1 transition-colors flex-shrink-0 ${
+                      settings.shareStatus !== false
+                        ? "bg-sage justify-end"
+                        : "bg-paper dark:bg-obsidian border border-ink/20 justify-start"
+                    }`}
+                  >
+                    <span className="w-4 h-4 rounded-full bg-cream shadow-sm" />
+                  </button>
+                </div>
+
                 {/* Preview 20-20-20 Trigger Button */}
                 <button
                   type="button"
@@ -433,9 +507,44 @@ export default function Home() {
                   <span className="text-matcha font-medium">LocalStorage Active</span>
                 </div>
 
-                <div className="flex items-center justify-between py-2">
+                <div className="flex items-center justify-between py-2 border-b border-[#EBE7DF] dark:border-[#383530]">
                   <span>PWA Standalone</span>
                   <span className="text-sage font-medium">Enabled (Chrome / Android)</span>
+                </div>
+
+                {/* Account / Authentication Link */}
+                <div className="pt-2">
+                  <span className="block text-xs font-semibold text-ink dark:text-cream mb-2">
+                    Cloud Account & Sanctuary Access
+                  </span>
+                  {session.uid ? (
+                    <div className="p-3.5 rounded-xl bg-cream dark:bg-mocha/40 border border-[#EBE7DF] dark:border-[#383530] flex items-center justify-between gap-2">
+                      <div>
+                        <span className="text-xs font-semibold text-ink dark:text-cream block truncate">
+                          {session.email}
+                        </span>
+                        <span className="text-[11px] text-sage font-medium uppercase tracking-wide">
+                          Role: {session.role || "Member"}
+                        </span>
+                      </div>
+                      {session.role === "captain" && (
+                        <Link
+                          href="/captain"
+                          className="px-3 py-1.5 rounded-lg bg-sage text-cream text-xs font-medium hover:bg-sage/90"
+                        >
+                          Captain Portal ⚓
+                        </Link>
+                      )}
+                    </div>
+                  ) : (
+                    <Link
+                      href="/login"
+                      className="w-full h-11 rounded-xl bg-sage/15 border border-sage/40 text-sage dark:text-matcha text-xs font-medium flex items-center justify-center gap-1.5 hover:bg-sage/20 active:scale-95 transition-all"
+                    >
+                      <Sparkles className="w-4 h-4" />
+                      <span>Sign In for Cloud Sanctuary & Sync</span>
+                    </Link>
+                  )}
                 </div>
               </div>
             </div>
@@ -458,6 +567,13 @@ export default function Home() {
         onClose={() => setIsCuteBreakOpen(false)}
         messageIndex={cuteBreakIndex}
       />
+
+      {/* Realtime Floating Drops & Silent Whispers */}
+      <Drops />
+      <Whisper />
+
+      {/* Sanctuary Chat Modal */}
+      <Chat isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
 
       {/* Fixed Bottom Navigation Bar */}
       <nav

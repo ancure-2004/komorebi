@@ -5,6 +5,7 @@ import { useHydrated } from "@/lib/hooks";
 import PomodoroEngine from "@/components/focus/PomodoroEngine";
 import GoalWatcher from "@/components/GoalWatcher";
 import FlexAutoStop from "@/components/FlexAutoStop";
+import Telemetry from "@/components/ldr/Telemetry";
 import { RoomProvider } from "@/lib/room";
 
 interface ProvidersProps {
@@ -34,6 +35,7 @@ export default function Providers({ children }: ProvidersProps) {
       <PomodoroEngine />
       <GoalWatcher />
       <FlexAutoStop />
+      <Telemetry />
       {children}
     </RoomProvider>
   );
