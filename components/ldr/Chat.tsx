@@ -78,7 +78,10 @@ export default function Chat({ isOpen, onClose, className = "" }: ChatProps) {
           .order("created_at", { ascending: true });
 
         if (!error && data && mounted) {
-          setMessages(data as Message[]);
+          const visible = (data as Message[]).filter(
+            (m) => !m.text?.startsWith("SIGNAL:") && !m.body?.startsWith("SIGNAL:")
+          );
+          setMessages(visible);
           setTimeout(scrollToBottom, 100);
         }
       } catch (err) {
@@ -97,6 +100,9 @@ export default function Chat({ isOpen, onClose, className = "" }: ChatProps) {
         (payload) => {
           if (payload.eventType === "INSERT") {
             const newRow = payload.new as Message;
+            if (newRow.text?.startsWith("SIGNAL:") || newRow.body?.startsWith("SIGNAL:")) {
+              return;
+            }
             setMessages((prev) => {
               if (prev.some((m) => m.id === newRow.id)) return prev;
               return [...prev, newRow];

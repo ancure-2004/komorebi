@@ -22,6 +22,7 @@ import CapsuleScheduler from "@/components/captain/CapsuleScheduler";
 import CouponManager from "@/components/captain/CouponManager";
 import SyncOrb from "@/components/ldr/SyncOrb";
 import Chat from "@/components/ldr/Chat";
+import NotificationBell from "@/components/NotificationBell";
 
 export default function CaptainPortalPage() {
   const router = useRouter();
@@ -96,6 +97,9 @@ export default function CaptainPortalPage() {
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Notification Bell */}
+          <NotificationBell />
+
           {/* Quick Chat Open */}
           <button
             type="button"

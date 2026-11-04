@@ -56,8 +56,9 @@ import SosButton from "@/components/ldr/SosButton";
 import Chat from "@/components/ldr/Chat";
 import SyncOrb from "@/components/ldr/SyncOrb";
 
-// PWA
+// PWA & Notifications
 import PwaRegister from "@/components/PwaRegister";
+import NotificationBell from "@/components/NotificationBell";
 
 export type NavTab = "flow" | "focus" | "growth" | "sanctuary" | "settings";
 
@@ -178,6 +179,9 @@ export default function Home() {
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Browser Notification Bell */}
+          <NotificationBell />
+
           {/* Emergency SOS Button */}
           <SosButton onOpenChat={() => setIsChatOpen(true)} />
 
