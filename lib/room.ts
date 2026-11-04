@@ -30,9 +30,12 @@ export interface ChatPayload {
   sender: string;
   sender_id?: string;
   kind: "text" | "polaroid" | "voice";
+  type?: "text" | "polaroid" | "voice";
   body?: string | null;
   text?: string | null;
   media_path?: string | null;
+  consumed?: boolean;
+  viewed_at?: string | null;
   created_at: string;
 }
 

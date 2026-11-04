@@ -42,7 +42,8 @@ export async function sendMedia(
   type: "polaroid" | "voice",
   blob: Blob,
   mime: string,
-  text?: string
+  text?: string,
+  customId?: string
 ): Promise<{ id: string; media_path: string }> {
   const {
     data: { user },
@@ -61,6 +62,7 @@ export async function sendMedia(
     ? "mp4"
     : "jpg";
 
+  const messageId = customId || crypto.randomUUID();
   const mediaPath = `${user.id}/${crypto.randomUUID()}.${ext}`;
 
   const { error: uploadError } = await supabase.storage
@@ -77,6 +79,7 @@ export async function sendMedia(
   const { data: message, error: insertError } = await supabase
     .from("messages")
     .insert({
+      id: messageId,
       sender_id: user.id,
       sender: user.id,
       type,
@@ -100,14 +103,38 @@ export async function sendMedia(
 }
 
 /**
- * Requests the single-view media binary from the consume-media Edge Function.
- * The Edge Function downloads the binary, immediately deletes it from
- * storage/ephemeral on the server, updates the database, and streams the bytes back.
+ * Requests the single-view media binary from the Next.js server route or Edge Function.
+ * Downloads the binary, immediately deletes it from storage/ephemeral on the server,
+ * updates the database, and streams the bytes back.
  */
 export async function consumeMedia(
   messageId: string
 ): Promise<{ blob: Blob | null; url: string | null; error: Error | null }> {
   try {
+    // 1. Try local server-side API route first (runs with SUPABASE_SERVICE_ROLE_KEY)
+    try {
+      const res = await fetch("/api/consume-media", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messageId }),
+      });
+
+      if (res.status === 200) {
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        return { blob, url, error: null };
+      } else if (res.status === 410) {
+        return {
+          blob: null,
+          url: null,
+          error: new Error("This media has already vanished."),
+        };
+      }
+    } catch {
+      // Fall through to edge function if local route is unreachable
+    }
+
+    // 2. Fallback to Supabase edge function
     const { data, error } = await supabase.functions.invoke("consume-media", {
       body: { messageId },
     });
