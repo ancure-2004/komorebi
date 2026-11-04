@@ -97,8 +97,8 @@ export default function CaptainPortalPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Notification Bell */}
-          <NotificationBell />
+          {/* Notification Bell Icon */}
+          <NotificationBell variant="icon" />
 
           {/* Quick Chat Open */}
           <button

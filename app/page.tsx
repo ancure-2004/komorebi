@@ -179,26 +179,23 @@ export default function Home() {
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Browser Notification Bell */}
-          <NotificationBell />
-
-          {/* Emergency SOS Button */}
+          {/* 1. Emergency SOS Button */}
           <SosButton onOpenChat={() => setIsChatOpen(true)} />
 
-          {/* Streak Indicator */}
+          {/* 2. Structured Streak Badge */}
           <div
             title={`${currentStreak} day streak`}
-            className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-paper dark:bg-obsidian border border-sage/20 text-xs font-medium text-sage dark:text-matcha"
+            className="w-10 h-10 min-h-[40px] min-w-[40px] rounded-xl bg-paper dark:bg-obsidian border border-[#EBE7DF] dark:border-[#383530] flex flex-col items-center justify-center text-sage dark:text-matcha shadow-sm active:scale-95 transition-all p-1"
           >
-            <Flame className="w-3.5 h-3.5 text-sage fill-sage/20" />
-            <span className="tabular-nums font-semibold">{currentStreak}</span>
+            <Flame className="w-4 h-4 text-sage fill-sage/20 flex-shrink-0" />
+            <span className="tabular-nums font-bold text-[10px] leading-tight mt-0.5">{currentStreak}</span>
           </div>
 
-          {/* Theme Toggle Button */}
+          {/* 3. Theme Toggle Button */}
           <button
             onClick={toggleTheme}
             aria-label="Toggle dark/light theme"
-            className="w-10 h-10 rounded-xl bg-paper dark:bg-obsidian border border-[#EBE7DF] dark:border-[#383530] flex items-center justify-center text-ink dark:text-cream active:scale-90 transition-all duration-150"
+            className="w-10 h-10 min-h-[40px] min-w-[40px] rounded-xl bg-paper dark:bg-obsidian border border-[#EBE7DF] dark:border-[#383530] flex items-center justify-center text-ink dark:text-cream active:scale-90 transition-all duration-150 shadow-sm"
           >
             <Sun className="w-4 h-4 hidden dark:block text-matcha" />
             <Moon className="w-4 h-4 block dark:hidden text-sage" />
@@ -420,6 +417,19 @@ export default function Home() {
               </h3>
 
               <div className="space-y-3.5 text-xs text-ink/80 dark:text-cream/80">
+                {/* Sanctuary Browser Alerts & Notifications */}
+                <div className="flex items-center justify-between py-2 border-b border-[#EBE7DF] dark:border-[#383530]">
+                  <div className="pr-3">
+                    <span className="block font-medium text-sm text-ink dark:text-cream">
+                      Sanctuary Browser Alerts
+                    </span>
+                    <span className="text-[11px] text-ink/60 dark:text-cream/60 leading-tight block mt-0.5">
+                      Plays soft audio chimes and shows notifications for Quick Drops, Study Whispers, Heartbeat Touch, and SOS.
+                    </span>
+                  </div>
+                  <NotificationBell variant="toggle" />
+                </div>
+
                 {/* Auto 20-20-20 Care Stretch Toggle */}
                 <div className="flex items-center justify-between py-2 border-b border-[#EBE7DF] dark:border-[#383530]">
                   <div className="pr-3">
