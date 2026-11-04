@@ -131,7 +131,7 @@ export default function Home() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen max-w-md mx-auto relative px-4 pt-5 pb-36 safe select-none">
+    <div className="flex flex-col min-h-screen max-w-md mx-auto relative px-4 pt-5 pb-[calc(7.5rem+env(safe-area-inset-bottom,0px))] select-none">
       <PwaRegister />
 
       {/* Top Header Bar */}
@@ -174,7 +174,7 @@ export default function Home() {
       <main className="flex-1 py-4 space-y-5">
         {/* TAB 1: FLOW */}
         {activeTab === "flow" && (
-          <div className="space-y-4">
+          <div className="space-y-4 pb-10">
             {/* Hero Card */}
             <Hero date={dateStr} onStartFocus={handleStartFocus} />
 
@@ -234,7 +234,7 @@ export default function Home() {
             {/* Schedule Editor Drawer Modal */}
             {isEditorOpen && (
               <div className="fixed inset-0 z-50 flex items-end justify-center bg-mocha/40 dark:bg-black/60 backdrop-blur-sm">
-                <div className="w-full max-w-md max-h-[90vh] overflow-y-auto rounded-t-3xl bg-cream dark:bg-mocha p-4 safe shadow-2xl">
+                <div className="w-full max-w-md max-h-[90vh] overflow-y-auto rounded-t-3xl bg-cream dark:bg-mocha p-4 pb-[max(1.5rem,env(safe-area-inset-bottom,0px))] shadow-2xl">
                   <ScheduleEditor onClose={() => setIsEditorOpen(false)} />
                 </div>
               </div>

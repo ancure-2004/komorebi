@@ -12,10 +12,6 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
-.safe {
-  padding-bottom: env(safe-area-inset-bottom);
-}
-
 /* Custom scrollbar for modern subtle aesthetics */
 ::-webkit-scrollbar {
   width: 6px;
