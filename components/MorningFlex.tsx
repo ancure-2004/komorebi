@@ -22,12 +22,14 @@ export interface MorningFlexProps {
   date?: string;
   defaultCollapsed?: boolean;
   className?: string;
+  onStartStopwatch?: () => void;
 }
 
 export default function MorningFlex({
   date: propDate,
   defaultCollapsed,
   className = "",
+  onStartStopwatch,
 }: MorningFlexProps) {
   const currentDate = propDate ?? todayKey();
   const rawDay = useApp((s) => s.days[currentDate]);
@@ -194,7 +196,13 @@ export default function MorningFlex({
           <div className="flex justify-center">
             <button
               type="button"
-              onClick={() => flexToggle(currentDate)}
+              onClick={() => {
+                const willStart = !isRunning;
+                flexToggle(currentDate);
+                if (willStart) {
+                  onStartStopwatch?.();
+                }
+              }}
               aria-label={isRunning ? "Pause morning flex stopwatch" : "Start morning flex stopwatch"}
               className={`h-11 px-6 rounded-xl font-sans font-medium text-sm flex items-center justify-center gap-2 shadow-sm active:scale-95 transition-all duration-150 ${
                 isRunning

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   CalendarClock,
   Timer,
@@ -35,7 +35,7 @@ import ScheduleEditor from "@/components/ScheduleEditor";
 import Pomodoro from "@/components/focus/Pomodoro";
 import Zen from "@/components/focus/Zen";
 import DeskClock from "@/components/focus/DeskClock";
-import BreakNudge from "@/components/focus/BreakNudge";
+import BreakNudge, { CuteBreakModal } from "@/components/focus/BreakNudge";
 import BrainDump from "@/components/focus/BrainDump";
 import SoundPanel from "@/components/sound/SoundPanel";
 
@@ -59,13 +59,59 @@ export default function Home() {
   const [isDeskClockOpen, setIsDeskClockOpen] = useState(false);
   const [isBrainDumpOpen, setIsBrainDumpOpen] = useState(false);
 
+  // 20-20-20 Automated Care Break Modal State
+  const [isCuteBreakOpen, setIsCuteBreakOpen] = useState(false);
+  const [cuteBreakIndex, setCuteBreakIndex] = useState(0);
+  const lastBreakAtRef = useRef<number>(0);
+
   const now = useNow(1000);
   const currentMin = minutesIST(now);
   const dateStr = todayKey(now);
-  const { days, template, startFocus } = useApp();
+  const { days, template, startFocus, pomo, settings, updateSettings } = useApp();
   const todayState = days[dateStr];
   const currentStreak = streak(days, dateStr);
   const room = useRoom();
+
+  const prevPomoPhaseRef = useRef<string>(pomo.phase);
+
+  // Background automated 20-20-20 stretch trigger
+  const isFlexRunning = Boolean(todayState?.flexRunningSince);
+  const isPomoRunning = pomo.phase === "focus" && pomo.pausedLeftMs === null;
+  const isAnyFocusActive = isFlexRunning || isPomoRunning;
+
+  useEffect(() => {
+    if (lastBreakAtRef.current === 0) {
+      lastBreakAtRef.current = now;
+    }
+
+    if (settings.autoBreakNudge === false) return;
+
+    // Trigger on Pomodoro phase switch to "break"
+    if (pomo.phase === "break" && prevPomoPhaseRef.current !== "break") {
+      setCuteBreakIndex((prev) => prev + 1);
+      setIsCuteBreakOpen(true);
+      lastBreakAtRef.current = now;
+    }
+    prevPomoPhaseRef.current = pomo.phase;
+
+    // Trigger on active study interval (default every 20 minutes)
+    if (isAnyFocusActive) {
+      const intervalMs = (settings.breakIntervalMin ?? 20) * 60000;
+      if (now - lastBreakAtRef.current >= intervalMs) {
+        setCuteBreakIndex((prev) => prev + 1);
+        setIsCuteBreakOpen(true);
+        lastBreakAtRef.current = now;
+      }
+    } else {
+      lastBreakAtRef.current = now;
+    }
+  }, [
+    now,
+    isAnyFocusActive,
+    pomo.phase,
+    settings.autoBreakNudge,
+    settings.breakIntervalMin,
+  ]);
 
   const toggleTheme = () => {
     if (typeof document === "undefined") return;
@@ -77,11 +123,15 @@ export default function Home() {
 
   const handleStartFocus = (blockId?: string) => {
     startFocus(blockId);
-    setActiveTab("focus");
+    if (settings.autoZenOnFocus !== false) {
+      setIsZenOpen(true);
+    } else {
+      setActiveTab("focus");
+    }
   };
 
   return (
-    <div className="flex flex-col min-h-screen max-w-md mx-auto relative px-4 pt-5 pb-24 safe select-none">
+    <div className="flex flex-col min-h-screen max-w-md mx-auto relative px-4 pt-5 pb-36 safe select-none">
       <PwaRegister />
 
       {/* Top Header Bar */}
@@ -165,7 +215,14 @@ export default function Home() {
             </div>
 
             {/* Morning Flex Bank (< 3:00 PM) */}
-            <MorningFlex date={dateStr} />
+            <MorningFlex
+              date={dateStr}
+              onStartStopwatch={() => {
+                if (settings.autoZenOnFocus !== false) {
+                  setIsZenOpen(true);
+                }
+              }}
+            />
 
             {/* Schedule View: River vs. Sunburst */}
             {flowView === "river" ? (
@@ -210,15 +267,11 @@ export default function Home() {
               </button>
             </div>
 
-            {/* Break Nudge (20-20-20 Rule) */}
+            {/* Break Nudge (20-20-20 Rule Card) */}
             <BreakNudge autoShowOnBreak={true} />
 
             {/* Soundscape Panel */}
             <SoundPanel />
-
-            {/* Overlays */}
-            <Zen isOpen={isZenOpen} onClose={() => setIsZenOpen(false)} />
-            <DeskClock forceOpen={isDeskClockOpen} onClose={() => setIsDeskClockOpen(false)} />
           </div>
         )}
 
@@ -301,11 +354,74 @@ export default function Home() {
                 <span>Operating Preferences</span>
               </h3>
 
-              <div className="space-y-3 text-xs text-ink/80 dark:text-cream/80">
+              <div className="space-y-3.5 text-xs text-ink/80 dark:text-cream/80">
+                {/* Auto 20-20-20 Care Stretch Toggle */}
                 <div className="flex items-center justify-between py-2 border-b border-[#EBE7DF] dark:border-[#383530]">
-                  <span>App Version</span>
-                  <span className="font-mono text-sage">v1.0.0 (Phase 2)</span>
+                  <div className="pr-3">
+                    <span className="block font-medium text-sm text-ink dark:text-cream">
+                      Auto 20-20-20 Care Stretch
+                    </span>
+                    <span className="text-[11px] text-ink/60 dark:text-cream/60 leading-tight block mt-0.5">
+                      Automatically pops up 20-second stretch breaks with cute rotating messages during study.
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      updateSettings((s) => ({
+                        ...s,
+                        autoBreakNudge: s.autoBreakNudge === false ? true : false,
+                      }))
+                    }
+                    className={`w-12 h-6 flex items-center rounded-full p-1 transition-colors flex-shrink-0 ${
+                      settings.autoBreakNudge !== false
+                        ? "bg-sage justify-end"
+                        : "bg-paper dark:bg-obsidian border border-ink/20 justify-start"
+                    }`}
+                  >
+                    <span className="w-4 h-4 rounded-full bg-cream shadow-sm" />
+                  </button>
                 </div>
+
+                {/* Auto Zen Mode on Focus Toggle */}
+                <div className="flex items-center justify-between py-2 border-b border-[#EBE7DF] dark:border-[#383530]">
+                  <div className="pr-3">
+                    <span className="block font-medium text-sm text-ink dark:text-cream">
+                      Auto Zen Mode on Focus
+                    </span>
+                    <span className="text-[11px] text-ink/60 dark:text-cream/60 leading-tight block mt-0.5">
+                      Enters fullscreen Zen mode automatically when starting Morning Flex or evening blocks.
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      updateSettings((s) => ({
+                        ...s,
+                        autoZenOnFocus: s.autoZenOnFocus === false ? true : false,
+                      }))
+                    }
+                    className={`w-12 h-6 flex items-center rounded-full p-1 transition-colors flex-shrink-0 ${
+                      settings.autoZenOnFocus !== false
+                        ? "bg-sage justify-end"
+                        : "bg-paper dark:bg-obsidian border border-ink/20 justify-start"
+                    }`}
+                  >
+                    <span className="w-4 h-4 rounded-full bg-cream shadow-sm" />
+                  </button>
+                </div>
+
+                {/* Preview 20-20-20 Trigger Button */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCuteBreakIndex((i) => i + 1);
+                    setIsCuteBreakOpen(true);
+                  }}
+                  className="w-full py-2.5 rounded-xl border border-sage/40 text-sage dark:text-matcha font-medium text-xs hover:bg-sage/10 active:scale-95 transition-all text-center"
+                >
+                  🌸 Preview 20-20-20 Stretch Modal Now
+                </button>
 
                 <div className="flex items-center justify-between py-2 border-b border-[#EBE7DF] dark:border-[#383530]">
                   <span>Clock Timezone</span>
@@ -332,6 +448,15 @@ export default function Home() {
         isOpen={isBrainDumpOpen}
         onToggle={() => setIsBrainDumpOpen(!isBrainDumpOpen)}
         showFloatingTrigger={true}
+      />
+
+      {/* Global Overlays Mounted at Root to Avoid Nested Container Clipping */}
+      <Zen isOpen={isZenOpen} onClose={() => setIsZenOpen(false)} />
+      <DeskClock forceOpen={isDeskClockOpen} onClose={() => setIsDeskClockOpen(false)} />
+      <CuteBreakModal
+        isOpen={isCuteBreakOpen}
+        onClose={() => setIsCuteBreakOpen(false)}
+        messageIndex={cuteBreakIndex}
       />
 
       {/* Fixed Bottom Navigation Bar */}

@@ -1,10 +1,22 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { Eye, Check, X, RotateCcw, Play, Pause, ChevronRight } from "lucide-react";
+import React, { useState, useEffect, useId } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Eye,
+  Check,
+  X,
+  RotateCcw,
+  Play,
+  Pause,
+  Heart,
+  Sparkles,
+  Smile,
+} from "lucide-react";
 import { useApp } from "@/lib/store";
 import { sound } from "@/lib/audio";
 import { haptics } from "@/lib/haptics";
+import { useNow } from "@/lib/hooks";
 
 export interface BreakNudgeProps {
   onDismiss?: () => void;
@@ -12,33 +24,261 @@ export interface BreakNudgeProps {
   className?: string;
 }
 
+const CUTE_NICKNAMES = [
+  "Time to stretch yourself, sugar pie! 🌸",
+  "Rest those pretty eyes, baby girl ✨",
+  "Look 20 feet away for 20 seconds, sweetheart 🌿",
+  "Roll your shoulders for me, my superstar 💆‍♀️",
+  "Breathe deep and relax your jaw, angel 🍯",
+  "You're studying so hard, darling... quick 20s stretch! 🌷",
+];
+
 const STRETCHES = [
   {
     step: 1,
-    title: "Shoulder Rolls ×5",
-    desc: "Roll your shoulders backward 5 times to release trapezius tension.",
-    tag: "Posture",
+    title: "Look 20 Feet Away 👁️",
+    desc: "Find something across the room or out a window. Relax your eye muscles.",
+    tag: "Eyes",
   },
   {
     step: 2,
-    title: "Neck Tilt & Hold",
-    desc: "Gently tilt your head toward each shoulder; hold for 5 seconds.",
-    tag: "Neck",
+    title: "Shoulder Rolls ×5 💆‍♀️",
+    desc: "Roll shoulders backward 5 times to release neck & spine tension.",
+    tag: "Posture",
   },
   {
     step: 3,
-    title: "Chest Opener",
-    desc: "Interlace fingers behind your back, draw shoulders down, and inhale deeply.",
-    tag: "Breathing",
-  },
-  {
-    step: 4,
-    title: "Hydrate & Blink",
-    desc: "Sip a glass of warm water and blink rapidly 10 times to rehydrate eyes.",
-    tag: "Hydration",
+    title: "Deep Inhale & Sip Water 💧",
+    desc: "Take one slow deep breath into your belly and take a warm sip.",
+    tag: "Calm",
   },
 ];
 
+/**
+ * Global Cute Break Modal triggered during study intervals.
+ * Runs an automatic 20-second countdown without breaking focus.
+ */
+export function CuteBreakModal({
+  isOpen,
+  onClose,
+  messageIndex = 0,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  messageIndex?: number;
+}) {
+  const [secondsLeft, setSecondsLeft] = useState(20);
+  const [isDone, setIsDone] = useState(false);
+  const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
+
+  // Reconcile state on open during render per React 19 conventions
+  if (isOpen !== prevIsOpen) {
+    setPrevIsOpen(isOpen);
+    if (isOpen) {
+      setSecondsLeft(20);
+      setIsDone(false);
+    }
+  }
+
+  // Chime and haptic feedback on opening
+  useEffect(() => {
+    if (isOpen) {
+      sound.chime();
+      haptics.light();
+    }
+  }, [isOpen]);
+
+  // Automatic 20-second countdown ticker
+  useEffect(() => {
+    if (!isOpen || isDone) return;
+    const interval = setInterval(() => {
+      setSecondsLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          setIsDone(true);
+          sound.chime();
+          haptics.success();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [isOpen, isDone]);
+
+  // Auto-dismiss 1.5 seconds after completion
+  useEffect(() => {
+    if (!isDone) return;
+    const timeout = setTimeout(() => {
+      onClose();
+    }, 1800);
+    return () => clearTimeout(timeout);
+  }, [isDone, onClose]);
+
+  // Lock background scroll when modal is open
+  useEffect(() => {
+    if (!isOpen) return;
+    const origOverflow = document.body.style.overflow;
+    const origTouch = document.body.style.touchAction;
+    document.body.style.overflow = "hidden";
+    document.body.style.touchAction = "none";
+    return () => {
+      document.body.style.overflow = origOverflow;
+      document.body.style.touchAction = origTouch;
+    };
+  }, [isOpen]);
+
+  const cuteMessage = CUTE_NICKNAMES[messageIndex % CUTE_NICKNAMES.length];
+
+  // Radial progress geometry
+  const radius = 38;
+  const circ = 2 * Math.PI * radius;
+  const progressRatio = (20 - secondsLeft) / 20;
+  const strokeOffset = circ * (1 - progressRatio);
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-mocha/60 dark:bg-black/75 backdrop-blur-sm select-none">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.92, y: 15 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.92, y: 15 }}
+            transition={{ duration: 0.25, ease: "easeOut" }}
+            className="w-full max-w-sm rounded-3xl bg-cream dark:bg-obsidian border border-sage/40 dark:border-matcha/30 p-5 shadow-2xl space-y-4"
+          >
+            {/* Header: Cute Rotating Nickname Message */}
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex items-center gap-2 text-sage dark:text-matcha">
+                <Heart className="w-5 h-5 text-sakura fill-sakura/50 animate-pulse" />
+                <span className="text-xs uppercase tracking-wider font-semibold">
+                  20-20-20 Care Break
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={onClose}
+                aria-label="Skip break reminder"
+                className="p-1.5 -mr-1 -mt-1 rounded-full text-ink/40 dark:text-cream/40 hover:text-ink hover:bg-sage/10 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="text-center pt-1">
+              <h3 className="font-serif text-lg font-bold text-ink dark:text-cream leading-snug">
+                {cuteMessage}
+              </h3>
+              <p className="text-xs text-ink/65 dark:text-cream/65 mt-1 font-sans">
+                {isDone
+                  ? "All refreshed, darling! Resuming your focus... ✨"
+                  : "Look 20 feet away for 20 seconds. Let your eyes soften."}
+              </p>
+            </div>
+
+            {/* Central Animated Countdown Ring */}
+            <div className="flex justify-center my-2">
+              <div className="relative w-28 h-28 flex items-center justify-center">
+                <svg
+                  viewBox="0 0 90 90"
+                  className="w-28 h-28 transform -rotate-90"
+                >
+                  <circle
+                    cx="45"
+                    cy="45"
+                    r={radius}
+                    fill="none"
+                    strokeWidth="6"
+                    className="stroke-sage/20 dark:stroke-obsidian/60"
+                  />
+                  <circle
+                    cx="45"
+                    cy="45"
+                    r={radius}
+                    fill="none"
+                    strokeWidth="6"
+                    strokeLinecap="round"
+                    strokeDasharray={circ}
+                    strokeDashoffset={strokeOffset}
+                    className="stroke-sage dark:stroke-matcha transition-[stroke-dashoffset] duration-700 ease-out"
+                  />
+                </svg>
+
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  {isDone ? (
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      className="w-10 h-10 rounded-full bg-sage flex items-center justify-center text-cream"
+                    >
+                      <Check className="w-6 h-6 stroke-[3]" />
+                    </motion.div>
+                  ) : (
+                    <>
+                      <span className="font-sans text-3xl font-bold tabular-nums text-ink dark:text-cream tracking-tight">
+                        {secondsLeft}s
+                      </span>
+                      <span className="text-[10px] text-sage font-medium tracking-wide">
+                        RESTING
+                      </span>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* 3 Care Steps */}
+            <div className="space-y-2 pt-1">
+              {STRETCHES.map((s) => (
+                <div
+                  key={s.step}
+                  className="flex items-center gap-2.5 p-2 rounded-xl bg-paper dark:bg-mocha/50 border border-[#EBE7DF] dark:border-[#383530] text-left"
+                >
+                  <span className="w-5 h-5 rounded-md bg-sage/15 dark:bg-sage/25 text-sage dark:text-matcha text-[11px] font-bold flex items-center justify-center flex-shrink-0">
+                    {s.step}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold text-ink dark:text-cream leading-tight">
+                      {s.title}
+                    </p>
+                    <p className="text-[11px] text-ink/60 dark:text-cream/60 leading-tight">
+                      {s.desc}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Bottom Actions */}
+            <div className="pt-2 flex items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={onClose}
+                className="flex-1 min-h-[44px] rounded-xl border border-sage/30 dark:border-matcha/30 text-xs font-medium text-ink/70 dark:text-cream/70 hover:bg-sage/10 active:scale-95 transition-all"
+              >
+                Skip For Now
+              </button>
+
+              <button
+                type="button"
+                onClick={onClose}
+                className="flex-1 min-h-[44px] rounded-xl bg-sage text-cream text-xs font-medium hover:bg-sage/90 active:scale-95 transition-all shadow-sm flex items-center justify-center gap-1.5"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>{isDone ? "Done" : "I'm Stretched"}</span>
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+/**
+ * Inline 20-20-20 Desk Card for the Focus tab.
+ */
 export default function BreakNudge({
   onDismiss,
   autoShowOnBreak = true,
@@ -97,7 +337,6 @@ export default function BreakNudge({
     setIsCounting(true);
   };
 
-  // If autoShowOnBreak is set and we're not in break phase and not explicitly visible, don't show
   if (autoShowOnBreak && phase !== "break" && isDismissed) {
     return null;
   }
@@ -105,7 +344,6 @@ export default function BreakNudge({
     return null;
   }
 
-  // Circular progress ring for 20-second countdown
   const radius = 28;
   const circumference = 2 * Math.PI * radius;
   const progressRatio = (20 - countdown) / 20;
@@ -144,7 +382,6 @@ export default function BreakNudge({
       {/* 20-Second Countdown Card */}
       <div className="flex items-center justify-between p-3.5 rounded-xl bg-cream/70 dark:bg-mocha/70 border border-[#EBE7DF] dark:border-[#383530] mb-4">
         <div className="flex items-center gap-3">
-          {/* Radial Countdown Mini Ring */}
           <div className="relative w-16 h-16 flex items-center justify-center">
             <svg viewBox="0 0 70 70" className="w-16 h-16 transform -rotate-90">
               <circle
@@ -184,7 +421,6 @@ export default function BreakNudge({
           </div>
         </div>
 
-        {/* Countdown Controls */}
         <div className="flex items-center gap-1">
           {countdown > 0 ? (
             <button
@@ -211,10 +447,10 @@ export default function BreakNudge({
         </div>
       </div>
 
-      {/* 4-Step Gentle Stretches */}
+      {/* Stretches list */}
       <div className="space-y-2">
         <span className="text-xs font-semibold uppercase tracking-wider text-ink/60 dark:text-cream/60 px-1 block">
-          4-Step Desk Reset
+          3-Step Care Reset
         </span>
 
         {STRETCHES.map((s) => {

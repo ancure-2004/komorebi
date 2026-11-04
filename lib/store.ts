@@ -60,6 +60,9 @@ export interface AppSettings {
   seenEnvelope?: string;
   onboarded?: boolean;
   zenMode?: boolean;
+  autoBreakNudge?: boolean;
+  autoZenOnFocus?: boolean;
+  breakIntervalMin?: number;
 }
 
 export interface AppState {
@@ -92,7 +95,14 @@ export const useApp = create<AppState>()(
       days: {},
       pomo: { phase: "idle", endAt: null, pausedLeftMs: null, preset: { focus: 25, brk: 5 } },
       brainDump: [],
-      settings: { shareStatus: true, sound: { kind: null, volume: 0.5 }, deskClock: true },
+      settings: {
+        shareStatus: true,
+        sound: { kind: null, volume: 0.5 },
+        deskClock: true,
+        autoBreakNudge: true,
+        autoZenOnFocus: true,
+        breakIntervalMin: 20,
+      },
 
       patchDay: (d, fn) =>
         set((s) => ({ days: { ...s.days, [d]: fn(s.days[d] ?? emptyDay()) } })),

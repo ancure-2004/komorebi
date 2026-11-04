@@ -174,6 +174,9 @@ export default function Timeline({
             </div>
           );
         })}
+
+        {/* Extra Bottom Breathing Room for Safe Scrolling */}
+        <div className="h-8" aria-hidden="true" />
       </div>
     </section>
   );
