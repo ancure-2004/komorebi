@@ -18,22 +18,6 @@ Komorebi is structured into five core modules:
 
 ---
 
-## User Interface
-
-<div align="center">
-  <img src="public/screenshots/dashboard.png" width="30%" alt="Komorebi Daily Dashboard" />
-  &nbsp;&nbsp;
-  <img src="public/screenshots/focus-timer.png" width="30%" alt="Komorebi Pomodoro Focus" />
-  &nbsp;&nbsp;
-  <img src="public/screenshots/companion-portal.png" width="30%" alt="Komorebi Companion Portal" />
-</div>
-
-<p align="center">
-  <em>Figure 1: Daily Flow Dashboard &bull; Figure 2: Pomodoro Focus Engine &bull; Figure 3: Companion Bridge Portal</em>
-</p>
-
----
-
 ## Key Features
 
 ### 📅 Daily Flow & Schedule Management
