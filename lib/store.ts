@@ -228,7 +228,17 @@ export const useApp = create<AppState>()(
     }),
     {
       name: "komorebi:v1",
-      version: 1,
+      version: 2,
+      migrate: (persistedState: unknown, version: number) => {
+        const state = (persistedState || {}) as Record<string, unknown>;
+        if (version < 2) {
+          return {
+            ...state,
+            template: DEFAULT_BLOCKS,
+          };
+        }
+        return state;
+      },
       storage: createJSONStorage(() => localStorage),
     }
   )

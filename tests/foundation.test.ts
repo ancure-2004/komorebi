@@ -60,18 +60,18 @@ describe("lib/schedule.ts — repack, locate, bump, applyLowEnergy", () => {
   });
 
   it("locates current and next blocks accurately", () => {
-    // DEFAULT_BLOCKS has s1 starting at 900 for 120min (900-1020)
+    // DEFAULT_BLOCKS has classes starting at 900 for 60min (900-960)
     const at930 = locate(DEFAULT_BLOCKS, 930);
-    expect(at930.current?.id).toBe("s1");
-    expect(at930.next?.id).toBe("walk");
+    expect(at930.current?.id).toBe("classes");
+    expect(at930.next?.id).toBe("s1");
 
     // Before any blocks (e.g. 800)
     const at800 = locate(DEFAULT_BLOCKS, 800);
     expect(at800.current).toBeNull();
-    expect(at800.next?.id).toBe("s1");
+    expect(at800.next?.id).toBe("classes");
 
-    // After all blocks (e.g. 1420)
-    const afterAll = locate(DEFAULT_BLOCKS, 1420);
+    // After all blocks (e.g. 1450)
+    const afterAll = locate(DEFAULT_BLOCKS, 1450);
     expect(afterAll.current).toBeNull();
     expect(afterAll.next).toBeNull();
   });
@@ -84,8 +84,8 @@ describe("lib/schedule.ts — repack, locate, bump, applyLowEnergy", () => {
     const s2 = bumped.find((b) => b.id === "s2")!;
 
     expect(s1.duration).toBe(150); // was 120
-    expect(walk.start).toBe(1050); // was 1020 + 30
-    expect(s2.start).toBe(1140); // was 1110 + 30
+    expect(walk.start).toBe(1110); // was 1080 + 30
+    expect(s2.start).toBe(1170); // was 1140 + 30
   });
 
   it("applies low energy: halves study blocks and distributes freed time", () => {

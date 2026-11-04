@@ -10,13 +10,13 @@ export interface Block {
 }
 
 export const DEFAULT_BLOCKS: Block[] = [
-  { id: "s1", title: "Deep Focus Session 1", emoji: "📚", kind: "study", start: 900, duration: 120 },
-  { id: "walk", title: "Outside Walk & Golden Hour", emoji: "🌿", kind: "walk", start: 1020, duration: 90 },
-  { id: "s2", title: "Deep Focus Session 2", emoji: "📖", kind: "study", start: 1110, duration: 120 },
-  { id: "dinner", title: "Dinner & Rest", emoji: "🍱", kind: "meal", start: 1230, duration: 30 },
-  { id: "wrap", title: "Evening Study Wrap-Up", emoji: "✍️", kind: "wrap", start: 1260, duration: 60 },
-  { id: "anime", title: "Anime Wind Down & Snack", emoji: "🍿", kind: "relax", start: 1320, duration: 60 },
-  { id: "reflect", title: "Reflection & Sleep Prep", emoji: "🌙", kind: "reflect", start: 1380, duration: 30 },
+  { id: "classes", title: "Teaching Classes", emoji: "👩‍🏫", kind: "custom", start: 900, duration: 60 },
+  { id: "s1", title: "Deep Study Session", emoji: "📚", kind: "study", start: 960, duration: 120 },
+  { id: "walk", title: "Walking & Relaxing", emoji: "🌿", kind: "walk", start: 1080, duration: 60 },
+  { id: "s2", title: "Second Study Session", emoji: "📖", kind: "study", start: 1140, duration: 120 },
+  { id: "dinner", title: "Dinner & Manicure Routine", emoji: "💅", kind: "meal", start: 1260, duration: 45 },
+  { id: "wrap", title: "Last Study Session", emoji: "✍️", kind: "wrap", start: 1305, duration: 60 },
+  { id: "anime", title: "Anime & Me Time", emoji: "🍿", kind: "relax", start: 1365, duration: 75 },
 ];
 
 export const FLEX_END = 900; // 3:00 PM in minutes since midnight
