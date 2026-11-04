@@ -1,4 +1,4 @@
-# Komorebi — Manual Setup & Deployment Guide for the Captain
+# Komorebi - Manual Setup & Deployment Guide for the Captain
 *Step-by-step instructions for infrastructure, authentication, and external services*
 
 ---
@@ -10,13 +10,14 @@
    - Choose region `ap-south-1` (Mumbai) for lowest latency to India/IST.
    - Note down the **Project URL** and **Anon public API key** from Project Settings -> API.
 
-2. **Database Migration:**
+2. **Extensions & Database Migration:**
+   - In Supabase Dashboard, go to **Database -> Extensions** and ensure `pg_cron` and `pg_net` are enabled.
    - Go to the **SQL Editor** in the Supabase Dashboard.
-   - Copy and paste the entire contents of `supabase/migrations/0001_init.sql` (generated in Phase 1).
-   - Click **Run** to create tables (`profiles`, `messages`, `capsules`, `coupons`, `status`), RLS security policies, and storage bucket settings.
+   - Copy and paste the entire contents of `supabase/migrations/0001_init.sql`.
+   - Click **Run** to create tables (`profiles`, `messages`, `daily_notes`, `capsules`, `coupons`, `status`), RLS security policies, `ephemeral` and `daily` storage buckets, and midnight cleanup schedule.
 
 3. **User Accounts & Roles:**
-   - Go to **Authentication -> Users** -> click **Add user -> Create user**.
+   - Go to **Authentication -> Users** -> click **Add user -> Create user** (toggle Auto-confirm User on).
    - Create User 1 (Her Account): Enter her email and a memorable strong password. Copy the generated User UID.
    - Create User 2 (Captain Account): Enter your email and password. Copy the generated User UID.
    - Go to **Authentication -> Configuration / Providers** -> **Disable "Allow new users to sign up"** (ensures only your 2 accounts can ever log in).
@@ -28,11 +29,16 @@
        ('<CAPTAIN_USER_UID>', 'captain', 'Captain');
      ```
 
-4. **Storage Bucket:**
-   - Verify in **Storage** that bucket `ephemeral` exists.
-   - Confirm it is marked **Private** (no public select/read policy). The Edge Function `consume-media` will securely handle one-time reads and immediate deletion.
+4. **Storage Buckets:**
+   - In **Storage**, confirm buckets `ephemeral` and `daily` exist and are marked **Private**.
+   - `ephemeral` has no public or authenticated SELECT policy - only the `consume-media` Edge Function with the service role key can download and delete single-view media.
+   - `daily` allows authenticated members to read (for morning note polaroids and love capsule photos).
 
-5. **Edge Functions & Cron:**
+5. **Realtime Channels Security:**
+   - Go to **Project Settings -> Realtime**.
+   - Turn **off** "Allow public access" so that only authorized authenticated members can subscribe to `komorebi:room` and listen to table change publications.
+
+6. **Edge Functions & Secrets:**
    - Install Supabase CLI locally if not already installed: `npx supabase login` and `npx supabase link --project-ref <your-project-ref>`.
    - Set secrets:
      ```bash
@@ -54,8 +60,8 @@
 3. Copy the HTTP API token provided by BotFather.
 4. Start a chat with your new bot and send any message (e.g. `/start`).
 5. Open your browser and visit: `https://api.telegram.org/bot<YOUR_BOT_TOKEN>/getUpdates`
-6. Look for `"chat":{"id":123456789}` — that number is your `TELEGRAM_CHAT_ID`.
-7. Add these two values to Supabase secrets as shown in step 1.5 above.
+6. Look for `"chat":{"id":123456789}` - that number is your `TELEGRAM_CHAT_ID`.
+7. Add these two values to Supabase secrets as shown in step 1.6 above.
 
 ---
 

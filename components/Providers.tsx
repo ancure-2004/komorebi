@@ -2,6 +2,10 @@
 
 import React, { ReactNode } from "react";
 import { useHydrated } from "@/lib/hooks";
+import PomodoroEngine from "@/components/focus/PomodoroEngine";
+import GoalWatcher from "@/components/GoalWatcher";
+import FlexAutoStop from "@/components/FlexAutoStop";
+import { RoomProvider } from "@/lib/room";
 
 interface ProvidersProps {
   children: ReactNode;
@@ -25,5 +29,12 @@ export default function Providers({ children }: ProvidersProps) {
     );
   }
 
-  return <>{children}</>;
+  return (
+    <RoomProvider>
+      <PomodoroEngine />
+      <GoalWatcher />
+      <FlexAutoStop />
+      {children}
+    </RoomProvider>
+  );
 }
