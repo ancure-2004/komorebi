@@ -8,23 +8,60 @@ import {
   MessageCircle,
   X,
   PhoneCall,
+  Bell,
   Sparkles,
 } from "lucide-react";
-import { useRoom, TouchPayload, ChatPayload } from "@/lib/room";
-import { useSession } from "@/lib/supabase";
+import { useRoom, TouchPayload, ChatPayload, DropPayload, WhisperPayload } from "@/lib/room";
 import { buzz, haptics } from "@/lib/haptics";
+import {
+  playChime,
+  showBrowserNotification,
+  requestNotificationPermission,
+  hasNotificationPermission,
+} from "@/lib/notifications";
 
 export default function RoomNotifications() {
   const room = useRoom();
-  const session = useSession();
 
-  // Determine current actor role
+  // Explicit route-based role: guarantees / is always 'her' and /captain is always 'captain'
   const isCaptain =
-    room.role === "captain" ||
-    session.role === "captain" ||
-    (typeof window !== "undefined" && window.location.pathname.startsWith("/captain"));
+    typeof window !== "undefined" && window.location.pathname.startsWith("/captain");
+  const myRole: "captain" | "her" = isCaptain ? "captain" : "her";
 
-  const myRole = isCaptain ? "captain" : "her";
+  // ── Browser Notification Permission State ──────────────────────────
+  const [showPermissionBanner, setShowPermissionBanner] = useState(false);
+  const [hasPermission, setHasPermission] = useState(() => {
+    if (typeof window !== "undefined" && "Notification" in window) {
+      return Notification.permission === "granted";
+    }
+    return false;
+  });
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && "Notification" in window) {
+      if (Notification.permission === "default") {
+        // Show non-intrusive prompt after 1.5 seconds
+        const timer = setTimeout(() => setShowPermissionBanner(true), 1500);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, []);
+
+  const handleRequestPermission = async () => {
+    const granted = await requestNotificationPermission();
+    setHasPermission(granted);
+    setShowPermissionBanner(false);
+    if (granted) {
+      haptics.success();
+      showBrowserNotification({
+        title: "✨ Notifications Enabled!",
+        body: myRole === "captain"
+          ? "You will receive Her live sync touch and SOS alerts."
+          : "You will receive Captain's heartbeat touches, study drops and notes.",
+        tag: "welcome",
+      });
+    }
+  };
 
   // ── 1. Mutual Touch State ──────────────────────────────────────────
   const [remoteHolding, setRemoteHolding] = useState(false);
@@ -48,6 +85,13 @@ export default function RoomNotifications() {
           setRemoteHolding(holding);
           if (holding) {
             haptics.light();
+            playChime("touch");
+            showBrowserNotification({
+              title: myRole === "captain" ? "🌸 She is touching the Sync Orb!" : "❤️ Captain is touching the Sync Orb!",
+              body: "Place your finger on the orb in Sanctuary to sync heartbeats.",
+              tag: "sync-touch",
+            });
+
             if (touchTimeoutRef.current) clearTimeout(touchTimeoutRef.current);
             touchTimeoutRef.current = setTimeout(() => {
               setRemoteHolding(false);
@@ -57,8 +101,35 @@ export default function RoomNotifications() {
       },
       onSos: () => {
         // High priority alarm
-        buzz([100, 60, 100, 60, 200]);
+        buzz([120, 60, 120, 60, 250]);
+        playChime("alert");
         setSosActive(true);
+        showBrowserNotification({
+          title: "🚨 EMERGENCY SOS FROM HER!",
+          body: "She needs your immediate presence and comfort right now.",
+          tag: "sos",
+          requireInteraction: true,
+        });
+      },
+      onDrop: ({ emoji }: DropPayload) => {
+        playChime("drop");
+        haptics.light();
+        showBrowserNotification({
+          title: `${emoji} Gentle Study Drop`,
+          body: myRole === "her"
+            ? `Captain sent you a gentle ${emoji} drop!`
+            : `Drop received: ${emoji}`,
+          tag: "drop",
+        });
+      },
+      onWhisper: ({ text }: WhisperPayload) => {
+        playChime("whisper");
+        haptics.medium();
+        showBrowserNotification({
+          title: "✨ Study Whisper from Captain",
+          body: `"${text}"`,
+          tag: "whisper",
+        });
       },
       onChat: (payload: ChatPayload) => {
         const isFromPartner =
@@ -68,6 +139,7 @@ export default function RoomNotifications() {
 
         if (isFromPartner) {
           haptics.medium();
+          playChime("chat");
           const preview =
             payload.kind === "polaroid"
               ? "📸 Sent you a new Polaroid selfie!"
@@ -79,6 +151,12 @@ export default function RoomNotifications() {
             id: payload.id,
             senderRole: myRole === "captain" ? "her" : "captain",
             preview,
+          });
+
+          showBrowserNotification({
+            title: `💌 Sanctuary Note from ${myRole === "captain" ? "Her 🌸" : "Captain ⚓"}`,
+            body: preview,
+            tag: "chat",
           });
 
           if (chatNoticeTimeoutRef.current) clearTimeout(chatNoticeTimeoutRef.current);
@@ -127,6 +205,52 @@ export default function RoomNotifications() {
 
   return (
     <div className="fixed top-3 inset-x-3 pointer-events-none z-50 flex flex-col items-center gap-2">
+      {/* ── 0. BROWSER NOTIFICATION PERMISSION PROMPT BANNER ─────── */}
+      <AnimatePresence>
+        {showPermissionBanner && !hasPermission && (
+          <motion.div
+            initial={{ opacity: 0, y: -20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -15, scale: 0.95 }}
+            transition={{ duration: 0.25 }}
+            className="w-full max-w-sm pointer-events-auto p-3.5 rounded-2xl bg-paper/95 dark:bg-obsidian/95 backdrop-blur-md border border-sage/40 shadow-aura flex items-center justify-between gap-3"
+            role="dialog"
+          >
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-8 h-8 rounded-full bg-sage/20 text-sage flex items-center justify-center flex-shrink-0">
+                <Bell className="w-4 h-4" />
+              </div>
+              <div className="min-w-0">
+                <p className="font-serif text-xs font-bold text-ink dark:text-cream leading-tight">
+                  Enable Sanctuary Alerts
+                </p>
+                <p className="text-[10px] font-sans text-ink/60 dark:text-cream/60 truncate mt-0.5">
+                  Get notified for heartbeat touch & drops.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1.5 flex-shrink-0">
+              <button
+                type="button"
+                onClick={handleRequestPermission}
+                className="py-1.5 px-3 rounded-xl bg-sage text-cream font-medium text-xs active:scale-95 transition-all shadow-sm"
+              >
+                Allow 🔔
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowPermissionBanner(false)}
+                className="p-1 rounded-lg text-ink/40 dark:text-cream/40 hover:text-ink"
+                aria-label="Dismiss permission prompt"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* ── 1. EMERGENCY SOS BANNER ───────────────────────────────── */}
       <AnimatePresence>
         {sosActive && (

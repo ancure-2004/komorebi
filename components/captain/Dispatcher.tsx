@@ -27,6 +27,8 @@ export default function Dispatcher({ className = "" }: DispatcherProps) {
   const handleSendDrop = (emoji: string) => {
     haptics.light();
     room.send("drop", { emoji });
+    setLastSentText(`Sent ${emoji} drop ✨`);
+    setTimeout(() => setLastSentText(null), 3000);
   };
 
   const handleSendWhisper = async (e: React.FormEvent) => {

@@ -111,15 +111,20 @@ export async function send(
   event: string,
   payload: object = {}
 ): Promise<string | null> {
-  if (!ch) return null;
+  if (!ch) {
+    console.warn(`[Komorebi Room] Cannot send ${event}: channel is null`);
+    return null;
+  }
   try {
-    return await ch.send({
+    const res = await ch.send({
       type: "broadcast",
       event,
       payload,
     });
+    console.log(`[Komorebi Room] Broadcast "${event}" (${ch.state}):`, res, payload);
+    return res;
   } catch (err) {
-    console.warn(`Failed to broadcast ${event}:`, err);
+    console.warn(`[Komorebi Room] Failed to broadcast ${event}:`, err);
     return null;
   }
 }
@@ -193,7 +198,8 @@ export function RoomProvider({ role: propRole, children }: RoomProviderProps) {
         directHandlersRef.current.onPresence?.(state);
         listenersRef.current.forEach((l) => l.onPresence?.(state));
       })
-      .subscribe((status) => {
+      .subscribe((status, err) => {
+        console.log(`[Komorebi Room] Channel status (${activeRole}):`, status, err || "");
         if (status === "SUBSCRIBED") {
           setIsSubscribed(true);
           ch.track({ role: activeRole, label: "Online", ts: Date.now() });
