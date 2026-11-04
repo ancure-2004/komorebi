@@ -16,7 +16,7 @@ import {
 import { fmtHM, minutesIST, todayKey } from "@/lib/time";
 import { FLEX_END } from "@/lib/schedule";
 import { useNow } from "@/lib/hooks";
-import { emptyDay, useApp } from "@/lib/store";
+import { EMPTY_DAY, useApp } from "@/lib/store";
 
 export interface MorningFlexProps {
   date?: string;
@@ -30,7 +30,8 @@ export default function MorningFlex({
   className = "",
 }: MorningFlexProps) {
   const currentDate = propDate ?? todayKey();
-  const day = useApp((s) => s.days[currentDate] ?? emptyDay());
+  const rawDay = useApp((s) => s.days[currentDate]);
+  const day = rawDay ?? EMPTY_DAY;
   const flexToggle = useApp((s) => s.flexToggle);
   const flexAdd = useApp((s) => s.flexAdd);
   const patchDay = useApp((s) => s.patchDay);

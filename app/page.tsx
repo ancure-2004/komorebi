@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import { fmtClock, minutesIST, todayKey } from "@/lib/time";
 import { useNow } from "@/lib/hooks";
-import { useApp, emptyDay } from "@/lib/store";
+import { useApp, EMPTY_DAY } from "@/lib/store";
 import { streak, totalFocusMs } from "@/lib/stats";
 import { useRoom } from "@/lib/room";
 
@@ -242,7 +242,7 @@ export default function Home() {
             {/* End-of-Day Reflection */}
             <Reflection
               date={dateStr}
-              totalFocusMs={totalFocusMs(todayState ?? emptyDay(), now)}
+              totalFocusMs={totalFocusMs(todayState ?? EMPTY_DAY, now)}
               streakCount={currentStreak}
             />
 

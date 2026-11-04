@@ -7,7 +7,7 @@ import { bump, isStudy } from "@/lib/schedule";
 import { dayBlocks } from "@/lib/stats";
 import { minutesIST, todayKey } from "@/lib/time";
 import { useNow } from "@/lib/hooks";
-import { emptyDay, useApp } from "@/lib/store";
+import { EMPTY_DAY, useApp } from "@/lib/store";
 import BlockCard from "./BlockCard";
 
 export interface TimelineProps {
@@ -24,7 +24,8 @@ export default function Timeline({
   className = "",
 }: TimelineProps) {
   const currentDate = propDate ?? todayKey();
-  const day = useApp((s) => s.days[currentDate] ?? emptyDay());
+  const rawDay = useApp((s) => s.days[currentDate]);
+  const day = rawDay ?? EMPTY_DAY;
   const template = useApp((s) => s.template);
   const patchDay = useApp((s) => s.patchDay);
   const storeStartFocus = useApp((s) => s.startFocus);

@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Play, Pause, Sparkles, Clock, Calendar } from "lucide-react";
 import { useMedia, useWakeLock, useNow } from "@/lib/hooks";
-import { useApp, emptyDay } from "@/lib/store";
+import { useApp, EMPTY_DAY } from "@/lib/store";
 import { dayBlocks } from "@/lib/stats";
 import { locate } from "@/lib/schedule";
 import { minutesIST, todayKey, fmtMMSS, fmtClock } from "@/lib/time";
@@ -52,7 +52,8 @@ export default function DeskClock({ forceOpen = false, onClose, className = "" }
   const resumePomo = useApp((s) => s.resumePomo);
   const template = useApp((s) => s.template);
   const today = todayKey(now);
-  const day = useApp((s) => s.days[today] ?? emptyDay());
+  const rawDay = useApp((s) => s.days[today]);
+  const day = rawDay ?? EMPTY_DAY;
 
   const blocks = dayBlocks(day, template);
   const nowMin = minutesIST(now, true);

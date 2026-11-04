@@ -18,6 +18,16 @@ export interface DayState {
   goalMet?: boolean;
 }
 
+export const EMPTY_DAY: DayState = Object.freeze({
+  flexGoalMin: 120,
+  flexLoggedMs: 0,
+  flexRunningSince: null,
+  lowEnergy: false,
+  focusMsByBlock: {},
+  doneBlockIds: [],
+  pomodoros: 0,
+});
+
 export const emptyDay = (): DayState => ({
   flexGoalMin: 120,
   flexLoggedMs: 0,

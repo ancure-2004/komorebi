@@ -7,7 +7,7 @@ import { FLEX_END } from "@/lib/schedule";
 import { dayBlocks } from "@/lib/stats";
 import { fmtClock, fmtHM, minutesIST, todayKey } from "@/lib/time";
 import { useNow } from "@/lib/hooks";
-import { emptyDay, useApp } from "@/lib/store";
+import { EMPTY_DAY, useApp } from "@/lib/store";
 
 export interface SunburstProps {
   blocks?: Block[];
@@ -65,7 +65,8 @@ export default function Sunburst({
   className = "",
 }: SunburstProps) {
   const currentDate = propDate ?? todayKey();
-  const day = useApp((s) => s.days[currentDate] ?? emptyDay());
+  const rawDay = useApp((s) => s.days[currentDate]);
+  const day = rawDay ?? EMPTY_DAY;
   const template = useApp((s) => s.template);
 
   const now = useNow(1000);

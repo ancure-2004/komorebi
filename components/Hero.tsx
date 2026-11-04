@@ -16,7 +16,7 @@ import { fmtClock, fmtHM, fmtMMSS, minutesIST, todayKey } from "@/lib/time";
 import { bump, FLEX_END, isStudy, locate } from "@/lib/schedule";
 import { dayBlocks } from "@/lib/stats";
 import { useNow } from "@/lib/hooks";
-import { emptyDay, useApp } from "@/lib/store";
+import { EMPTY_DAY, useApp } from "@/lib/store";
 
 export interface HeroProps {
   date?: string;
@@ -30,7 +30,8 @@ export default function Hero({
   className = "",
 }: HeroProps) {
   const currentDate = propDate ?? todayKey();
-  const day = useApp((s) => s.days[currentDate] ?? emptyDay());
+  const rawDay = useApp((s) => s.days[currentDate]);
+  const day = rawDay ?? EMPTY_DAY;
   const template = useApp((s) => s.template);
   const patchDay = useApp((s) => s.patchDay);
   const pomo = useApp((s) => s.pomo);
