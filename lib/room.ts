@@ -25,6 +25,17 @@ export interface TouchPayload {
   holding: boolean;
 }
 
+export interface ChatPayload {
+  id: string;
+  sender: string;
+  sender_id?: string;
+  kind: "text" | "polaroid" | "voice";
+  body?: string | null;
+  text?: string | null;
+  media_path?: string | null;
+  created_at: string;
+}
+
 export type PresenceState = Record<string, Array<Record<string, unknown>>>;
 
 export interface RoomEvents {
@@ -32,33 +43,34 @@ export interface RoomEvents {
   onDrop?: (payload: DropPayload) => void;
   onTouch?: (payload: TouchPayload) => void;
   onSos?: () => void;
+  onChat?: (payload: ChatPayload) => void;
   onPresence?: (presence: PresenceState) => void;
 }
 
 export interface RoomContextValue {
   channel: RealtimeChannel | null;
+  role: UserRole;
   send: (event: string, payload?: object) => Promise<string | null>;
   track: (state: object) => Promise<string | null>;
   presence: PresenceState;
   isSubscribed: boolean;
   registerHandlers: (handlers: RoomEvents) => () => void;
-  // Direct handler callbacks for simple inline usage (e.g. room.onTouch = ...)
+  // Direct handler callbacks
   onTouch?: (payload: TouchPayload) => void;
   onWhisper?: (payload: WhisperPayload) => void;
   onDrop?: (payload: DropPayload) => void;
   onSos?: () => void;
+  onChat?: (payload: ChatPayload) => void;
 }
 
 const RoomContext = createContext<RoomContextValue | null>(null);
 
 /**
  * Low-level room connection helper.
- * Subscribes to the authorized private channel 'komorebi:room'.
  */
 export function joinRoom(role: UserRole, handlers: RoomEvents): RealtimeChannel {
   const ch = supabase.channel("komorebi:room", {
     config: {
-      private: true,
       broadcast: { self: false },
       presence: { key: role },
     },
@@ -75,6 +87,9 @@ export function joinRoom(role: UserRole, handlers: RoomEvents): RealtimeChannel 
     })
     .on("broadcast", { event: "sos" }, () => {
       handlers.onSos?.();
+    })
+    .on("broadcast", { event: "chat" }, ({ payload }) => {
+      handlers.onChat?.(payload as ChatPayload);
     })
     .on("presence", { event: "sync" }, () => {
       handlers.onPresence?.(ch.presenceState());
@@ -116,12 +131,19 @@ interface RoomProviderProps {
 
 /**
  * React Provider managing the real-time presence and broadcast connection.
- * Resilient to network drops and offline state.
+ * Auto-resolves active role (captain vs her) so it connects immediately even before login.
  */
-export function RoomProvider({ role, children }: RoomProviderProps) {
+export function RoomProvider({ role: propRole, children }: RoomProviderProps) {
   const [presence, setPresence] = useState<PresenceState>({});
   const [isSubscribed, setIsSubscribed] = useState(false);
   const channelRef = useRef<RealtimeChannel | null>(null);
+
+  // Inferred role: fallback to URL pathname or default to 'her'
+  const activeRole: UserRole =
+    propRole ||
+    (typeof window !== "undefined" && window.location.pathname.startsWith("/captain")
+      ? "captain"
+      : "her");
 
   // Registered listeners set
   const listenersRef = useRef<Set<RoomEvents>>(new Set());
@@ -135,16 +157,11 @@ export function RoomProvider({ role, children }: RoomProviderProps) {
   }, []);
 
   useEffect(() => {
-    if (!role) {
-      channelRef.current = null;
-      return;
-    }
-
+    // Connect to shared broadcast & presence channel
     const ch = supabase.channel("komorebi:room", {
       config: {
-        private: true,
         broadcast: { self: false },
-        presence: { key: role },
+        presence: { key: activeRole },
       },
     });
 
@@ -166,6 +183,10 @@ export function RoomProvider({ role, children }: RoomProviderProps) {
         directHandlersRef.current.onSos?.();
         listenersRef.current.forEach((l) => l.onSos?.());
       })
+      .on("broadcast", { event: "chat" }, ({ payload }) => {
+        directHandlersRef.current.onChat?.(payload as ChatPayload);
+        listenersRef.current.forEach((l) => l.onChat?.(payload as ChatPayload));
+      })
       .on("presence", { event: "sync" }, () => {
         const state = ch.presenceState();
         setPresence(state);
@@ -175,7 +196,7 @@ export function RoomProvider({ role, children }: RoomProviderProps) {
       .subscribe((status) => {
         if (status === "SUBSCRIBED") {
           setIsSubscribed(true);
-          ch.track({ role, label: "Online", ts: Date.now() });
+          ch.track({ role: activeRole, label: "Online", ts: Date.now() });
         } else if (status === "CLOSED" || status === "CHANNEL_ERROR") {
           setIsSubscribed(false);
         }
@@ -186,7 +207,7 @@ export function RoomProvider({ role, children }: RoomProviderProps) {
       setIsSubscribed(false);
       supabase.removeChannel(ch);
     };
-  }, [role]);
+  }, [activeRole]);
 
   const handleSend = useCallback(
     async (event: string, payload: object = {}) => {
@@ -213,6 +234,7 @@ export function RoomProvider({ role, children }: RoomProviderProps) {
     get channel() {
       return channelRef.current;
     },
+    role: activeRole,
     send: handleSend,
     track: handleTrack,
     presence,
@@ -242,6 +264,12 @@ export function RoomProvider({ role, children }: RoomProviderProps) {
     set onSos(fn) {
       directHandlersRef.current.onSos = fn;
     },
+    get onChat() {
+      return directHandlersRef.current.onChat;
+    },
+    set onChat(fn) {
+      directHandlersRef.current.onChat = fn;
+    },
   };
 
   return React.createElement(RoomContext.Provider, { value: contextValue }, children);
@@ -255,6 +283,7 @@ export function useRoom(): RoomContextValue {
   if (!ctx) {
     return {
       channel: null,
+      role: "her",
       send: async () => null,
       track: async () => null,
       presence: {},

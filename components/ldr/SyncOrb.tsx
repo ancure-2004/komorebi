@@ -157,11 +157,19 @@ export default function SyncOrb({ me = "her", className = "" }: SyncOrbProps) {
           {both
             ? "Holding together across the miles 🌿"
             : mine
-            ? "Waiting for Captain's touch..."
+            ? (me === "captain" ? "Waiting for Her touch... 🌸" : "Waiting for Captain's touch... ⚓")
+            : theirs
+            ? (me === "captain" ? "She is holding the orb! Place your finger to sync! ❤️" : "Captain is holding the orb! Place your finger to sync! ❤️")
             : "Place your finger and hold to feel each other"}
         </p>
         <p className="text-[11px] font-sans text-ink/50 dark:text-cream/50 mt-0.5">
-          {both ? "Haptic heartbeat pulsing synchronously" : "Realtime emotional touch bridge"}
+          {both
+            ? "Haptic heartbeat pulsing synchronously"
+            : mine
+            ? (me === "captain" ? "Notification sent to Her screen" : "Notification sent to Captain's screen")
+            : theirs
+            ? "Touch now to connect heartbeats"
+            : "Realtime emotional touch bridge"}
         </p>
       </div>
     </div>

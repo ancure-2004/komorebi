@@ -52,8 +52,6 @@ import StoryCard from "@/components/growth/StoryCard";
 // LDR & Sanctuary Components
 import Envelope from "@/components/ldr/Envelope";
 import Capsules from "@/components/ldr/Capsules";
-import Drops from "@/components/ldr/Drops";
-import Whisper from "@/components/ldr/Whisper";
 import SosButton from "@/components/ldr/SosButton";
 import Chat from "@/components/ldr/Chat";
 import SyncOrb from "@/components/ldr/SyncOrb";
@@ -76,6 +74,23 @@ export default function Home() {
   const [isCuteBreakOpen, setIsCuteBreakOpen] = useState(false);
   const [cuteBreakIndex, setCuteBreakIndex] = useState(0);
   const lastBreakAtRef = useRef<number>(0);
+
+  // Listen to cross-component tab switch and chat open events
+  useEffect(() => {
+    const handleSwitchTab = (e: Event) => {
+      const tab = (e as CustomEvent).detail as NavTab;
+      if (tab) setActiveTab(tab);
+    };
+    const handleOpenChat = () => setIsChatOpen(true);
+
+    window.addEventListener("komorebi:switch-tab", handleSwitchTab);
+    window.addEventListener("komorebi:open-chat", handleOpenChat);
+
+    return () => {
+      window.removeEventListener("komorebi:switch-tab", handleSwitchTab);
+      window.removeEventListener("komorebi:open-chat", handleOpenChat);
+    };
+  }, []);
 
   const now = useNow(1000);
   const currentMin = minutesIST(now);
@@ -567,10 +582,6 @@ export default function Home() {
         onClose={() => setIsCuteBreakOpen(false)}
         messageIndex={cuteBreakIndex}
       />
-
-      {/* Realtime Floating Drops & Silent Whispers */}
-      <Drops />
-      <Whisper />
 
       {/* Sanctuary Chat Modal */}
       <Chat isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />

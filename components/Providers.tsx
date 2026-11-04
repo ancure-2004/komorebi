@@ -6,6 +6,9 @@ import PomodoroEngine from "@/components/focus/PomodoroEngine";
 import GoalWatcher from "@/components/GoalWatcher";
 import FlexAutoStop from "@/components/FlexAutoStop";
 import Telemetry from "@/components/ldr/Telemetry";
+import RoomNotifications from "@/components/ldr/RoomNotifications";
+import Drops from "@/components/ldr/Drops";
+import Whisper from "@/components/ldr/Whisper";
 import { RoomProvider } from "@/lib/room";
 
 interface ProvidersProps {
@@ -36,6 +39,9 @@ export default function Providers({ children }: ProvidersProps) {
       <GoalWatcher />
       <FlexAutoStop />
       <Telemetry />
+      <RoomNotifications />
+      <Drops />
+      <Whisper />
       {children}
     </RoomProvider>
   );

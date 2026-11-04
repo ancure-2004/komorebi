@@ -16,6 +16,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { supabase, Message, useSession } from "@/lib/supabase";
+import { useRoom, ChatPayload } from "@/lib/room";
 import { toSquareJpeg, sendMedia, consumeMedia } from "@/lib/media";
 import { haptics } from "@/lib/haptics";
 
@@ -27,9 +28,22 @@ export interface ChatProps {
 
 export default function Chat({ isOpen, onClose, className = "" }: ChatProps) {
   const session = useSession();
+  const room = useRoom();
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState("");
   const [isSending, setIsSending] = useState(false);
+
+  // Infer user identity with fallback to known user IDs
+  const isCaptain =
+    session.role === "captain" ||
+    room.role === "captain" ||
+    (typeof window !== "undefined" && window.location.pathname.startsWith("/captain"));
+
+  const activeUid =
+    session.uid ||
+    (isCaptain
+      ? "b8eb2e9f-ad30-49a3-8cff-1e90445f04e8"
+      : "a0ba3cb9-5397-498b-8740-5b9842381d15");
 
   // Polaroid preview state for developing view-once photo
   const [developingUrl, setDevelopingUrl] = useState<string | null>(null);
@@ -50,7 +64,7 @@ export default function Chat({ isOpen, onClose, className = "" }: ChatProps) {
     }
   }, []);
 
-  // Fetch active messages and subscribe to Realtime changes
+  // Fetch active messages and subscribe to Realtime changes + WebSocket broadcast
   useEffect(() => {
     if (!isOpen) return;
 
@@ -59,7 +73,7 @@ export default function Chat({ isOpen, onClose, className = "" }: ChatProps) {
     async function loadMessages() {
       try {
         const { data, error } = await supabase
-          .from("chat_messages")
+          .from("messages")
           .select("*")
           .order("created_at", { ascending: true });
 
@@ -74,15 +88,19 @@ export default function Chat({ isOpen, onClose, className = "" }: ChatProps) {
 
     loadMessages();
 
-    // Subscribe to Postgres changes on chat_messages
+    // Subscribe to Postgres changes on messages table
     const channel = supabase
-      .channel("sanctuary-chat-feed")
+      .channel("sanctuary-messages-feed")
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "chat_messages" },
+        { event: "*", schema: "public", table: "messages" },
         (payload) => {
           if (payload.eventType === "INSERT") {
-            setMessages((prev) => [...prev, payload.new as Message]);
+            const newRow = payload.new as Message;
+            setMessages((prev) => {
+              if (prev.some((m) => m.id === newRow.id)) return prev;
+              return [...prev, newRow];
+            });
             setTimeout(scrollToBottom, 100);
           } else if (payload.eventType === "UPDATE") {
             setMessages((prev) =>
@@ -95,33 +113,90 @@ export default function Chat({ isOpen, onClose, className = "" }: ChatProps) {
       )
       .subscribe();
 
+    // Also register broadcast listener for peer-to-peer real-time delivery
+    const unregisterRoom = room.registerHandlers({
+      onChat: (payload: ChatPayload) => {
+        setMessages((prev) => {
+          if (prev.some((m) => m.id === payload.id)) return prev;
+          const incoming: Message = {
+            id: payload.id,
+            sender_id: payload.sender_id || payload.sender,
+            sender: payload.sender,
+            text: payload.text || payload.body || null,
+            body: payload.body || payload.text || null,
+            type: payload.kind,
+            kind: payload.kind,
+            media_path: payload.media_path || null,
+            consumed: false,
+            viewed_at: null,
+            created_at: payload.created_at || new Date().toISOString(),
+          };
+          return [...prev, incoming];
+        });
+        setTimeout(scrollToBottom, 100);
+      },
+    });
+
     return () => {
       mounted = false;
       supabase.removeChannel(channel);
+      unregisterRoom();
     };
-  }, [isOpen, scrollToBottom]);
+  }, [isOpen, scrollToBottom, room]);
 
   // Send Text Message
   const handleSendText = async (e?: React.FormEvent) => {
     e?.preventDefault();
     const text = inputText.trim();
-    if (!text || isSending || !session.uid) return;
+    if (!text || isSending) return;
 
     setIsSending(true);
     setInputText("");
     haptics.light();
 
+    const tempId = `msg-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+    const optimisticMsg: Message = {
+      id: tempId,
+      sender_id: activeUid,
+      sender: activeUid,
+      text,
+      body: text,
+      type: "text",
+      kind: "text",
+      media_path: null,
+      consumed: false,
+      viewed_at: null,
+      created_at: new Date().toISOString(),
+    };
+
+    // Optimistically show on sender's screen
+    setMessages((prev) => [...prev, optimisticMsg]);
+    setTimeout(scrollToBottom, 50);
+
+    // Broadcast over WebSocket room for instant delivery to partner
+    room.send("chat", optimisticMsg);
+
     try {
-      await supabase.from("chat_messages").insert({
-        sender: session.uid,
-        kind: "text",
-        type: "text",
-        body: text,
-        text: text,
-      });
-      setTimeout(scrollToBottom, 50);
+      const { data, error } = await supabase
+        .from("messages")
+        .insert({
+          sender_id: activeUid,
+          sender: activeUid,
+          text,
+          body: text,
+          type: "text",
+          kind: "text",
+        })
+        .select()
+        .single();
+
+      if (!error && data) {
+        setMessages((prev) =>
+          prev.map((m) => (m.id === tempId ? (data as Message) : m))
+        );
+      }
     } catch (err) {
-      console.warn("Failed to send text message:", err);
+      console.warn("Failed to persist text message:", err);
     } finally {
       setIsSending(false);
     }
@@ -130,14 +205,25 @@ export default function Chat({ isOpen, onClose, className = "" }: ChatProps) {
   // Handle Photo Capture (Front Camera Polaroid)
   const handlePhotoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !session.uid) return;
+    if (!file) return;
 
     setIsSending(true);
     haptics.medium();
 
     try {
       const squareBlob = await toSquareJpeg(file, 720, 0.85);
-      await sendMedia("polaroid", squareBlob, "image/jpeg");
+      const res = await sendMedia("polaroid", squareBlob, "image/jpeg");
+      if (res?.id) {
+        room.send("chat", {
+          id: res.id,
+          sender: activeUid,
+          sender_id: activeUid,
+          kind: "polaroid",
+          type: "polaroid",
+          media_path: res.media_path,
+          created_at: new Date().toISOString(),
+        });
+      }
       setTimeout(scrollToBottom, 100);
     } catch (err) {
       console.warn("Failed to upload Polaroid:", err);
@@ -201,7 +287,18 @@ export default function Chat({ isOpen, onClose, className = "" }: ChatProps) {
 
         if (audioBlob.size > 1000) {
           try {
-            await sendMedia("voice", audioBlob, mimeType || "audio/webm");
+            const res = await sendMedia("voice", audioBlob, mimeType || "audio/webm");
+            if (res?.id) {
+              room.send("chat", {
+                id: res.id,
+                sender: activeUid,
+                sender_id: activeUid,
+                kind: "voice",
+                type: "voice",
+                media_path: res.media_path,
+                created_at: new Date().toISOString(),
+              });
+            }
             setTimeout(scrollToBottom, 100);
           } catch (err) {
             console.warn("Failed to send voice note:", err);
@@ -298,7 +395,12 @@ export default function Chat({ isOpen, onClose, className = "" }: ChatProps) {
           </div>
         ) : (
           messages.map((m) => {
-            const isMe = m.sender === session.uid || m.sender_id === session.uid;
+            const isMe =
+              m.sender === activeUid ||
+              m.sender_id === activeUid ||
+              (isCaptain
+                ? m.sender === "b8eb2e9f-ad30-49a3-8cff-1e90445f04e8" || m.sender_id === "b8eb2e9f-ad30-49a3-8cff-1e90445f04e8"
+                : m.sender === "a0ba3cb9-5397-498b-8740-5b9842381d15" || m.sender_id === "a0ba3cb9-5397-498b-8740-5b9842381d15");
             const isVanished = m.consumed || Boolean(m.viewed_at && !m.media_path);
 
             return (

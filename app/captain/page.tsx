@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -27,6 +27,12 @@ export default function CaptainPortalPage() {
   const router = useRouter();
   const session = useSession();
   const [isChatOpen, setIsChatOpen] = useState(false);
+
+  useEffect(() => {
+    const handleOpenChat = () => setIsChatOpen(true);
+    window.addEventListener("komorebi:open-chat", handleOpenChat);
+    return () => window.removeEventListener("komorebi:open-chat", handleOpenChat);
+  }, []);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
