@@ -78,6 +78,14 @@ export default function RoomNotifications() {
   } | null>(null);
   const chatNoticeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // ── 4. Quick Drop Toast Notification State ─────────────────────────
+  const [dropNotice, setDropNotice] = useState<{
+    id: string;
+    emoji: string;
+    sender: string;
+  } | null>(null);
+  const dropNoticeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   useEffect(() => {
     const unregister = room.registerHandlers({
       onTouch: ({ who, holding }: TouchPayload) => {
@@ -114,6 +122,16 @@ export default function RoomNotifications() {
       onDrop: ({ emoji }: DropPayload) => {
         playChime("drop");
         haptics.light();
+        setDropNotice({
+          id: `${Date.now()}`,
+          emoji,
+          sender: myRole === "her" ? "Captain ⚓" : "Her 🌸",
+        });
+        if (dropNoticeTimeoutRef.current) clearTimeout(dropNoticeTimeoutRef.current);
+        dropNoticeTimeoutRef.current = setTimeout(() => {
+          setDropNotice(null);
+        }, 5000);
+
         showBrowserNotification({
           title: `${emoji} Gentle Study Drop`,
           body: myRole === "her"
@@ -171,6 +189,7 @@ export default function RoomNotifications() {
       unregister();
       if (touchTimeoutRef.current) clearTimeout(touchTimeoutRef.current);
       if (chatNoticeTimeoutRef.current) clearTimeout(chatNoticeTimeoutRef.current);
+      if (dropNoticeTimeoutRef.current) clearTimeout(dropNoticeTimeoutRef.current);
     };
   }, [room, myRole]);
 
@@ -204,7 +223,7 @@ export default function RoomNotifications() {
   const captainWa = process.env.NEXT_PUBLIC_CAPTAIN_WA || "";
 
   return (
-    <div className="fixed top-3 inset-x-3 pointer-events-none z-50 flex flex-col items-center gap-2">
+    <div className="fixed top-3 inset-x-3 pointer-events-none z-[9999] flex flex-col items-center gap-2">
       {/* ── 0. BROWSER NOTIFICATION PERMISSION PROMPT BANNER ─────── */}
       <AnimatePresence>
         {showPermissionBanner && !hasPermission && (
@@ -381,6 +400,43 @@ export default function RoomNotifications() {
             <span className="text-[10px] font-sans font-medium text-sage dark:text-matcha flex-shrink-0">
               Tap to view
             </span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── 4. QUICK DROP NOTIFICATION TOAST ───────────────────────── */}
+      <AnimatePresence>
+        {dropNotice && !sosActive && (
+          <motion.div
+            initial={{ opacity: 0, y: -15, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -15, scale: 0.95 }}
+            transition={{ duration: 0.2 }}
+            className="w-full max-w-sm pointer-events-auto p-3 rounded-2xl bg-paper/95 dark:bg-obsidian/95 backdrop-blur-md border border-sakura/50 shadow-aura flex items-center justify-between gap-2.5"
+            role="status"
+          >
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-9 h-9 rounded-full bg-sakura/20 text-mocha dark:text-cream flex items-center justify-center text-xl flex-shrink-0 animate-bounce">
+                {dropNotice.emoji}
+              </div>
+              <div className="min-w-0">
+                <span className="text-[10px] font-sans font-semibold text-sakura uppercase tracking-wider block">
+                  Gentle Drop from {dropNotice.sender}
+                </span>
+                <p className="font-serif text-xs text-ink dark:text-cream truncate">
+                  Sent you a {dropNotice.emoji} care drop ✨
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setDropNotice(null)}
+              className="p-1 rounded-lg text-ink/40 dark:text-cream/40 hover:text-ink"
+              aria-label="Dismiss drop notice"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
           </motion.div>
         )}
       </AnimatePresence>

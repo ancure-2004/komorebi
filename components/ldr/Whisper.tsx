@@ -29,7 +29,7 @@ export default function Whisper() {
   }, [room]);
 
   return (
-    <div className="fixed top-4 inset-x-4 pointer-events-none z-50 flex justify-center">
+    <div className="fixed top-4 inset-x-4 pointer-events-none z-[9999] flex justify-center">
       <AnimatePresence>
         {whisperText && (
           <motion.div

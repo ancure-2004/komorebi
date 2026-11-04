@@ -39,10 +39,10 @@ export default function Providers({ children }: ProvidersProps) {
       <GoalWatcher />
       <FlexAutoStop />
       <Telemetry />
-      <RoomNotifications />
+      {children}
       <Drops />
       <Whisper />
-      {children}
+      <RoomNotifications />
     </RoomProvider>
   );
 }
