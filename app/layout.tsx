@@ -25,6 +25,10 @@ export const metadata: Metadata = {
     title: "Komorebi",
     statusBarStyle: "default",
   },
+  icons: {
+    icon: "/icons/icon-192.png",
+    apple: "/icons/icon-192.png",
+  },
 };
 
 export const viewport: Viewport = {
