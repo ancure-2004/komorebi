@@ -5,7 +5,7 @@
 
 ## 1. Executive Summary & Vision
 
-**Komorebi (木漏れ日)** is a dedicated, aesthetic personal study and scheduling web application crafted for the captain's girlfriend. It balances academic rigor with mental well-being, providing clear, stress-free time management while keeping the long-distance relationship vibrant, supportive, and emotionally connected.
+**Komorebi (木漏れ日)** is a dedicated, aesthetic personal study and scheduling web application. It balances academic rigor with mental well-being, providing clear, stress-free time management while keeping the companion connection vibrant, supportive, and emotionally connected.
 
 ### Core Philosophy
 1. **Split-Day Flexibility:** Mornings are unpredictable; evenings are structured. Avoid rigid morning hours by tracking flexible banked study time before 3:00 PM, followed by comfortable, predictable preset blocks from 3:00 PM to 11:00 PM.

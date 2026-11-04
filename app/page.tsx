@@ -63,7 +63,16 @@ import NotificationBell from "@/components/NotificationBell";
 export type NavTab = "flow" | "focus" | "growth" | "sanctuary" | "settings";
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState<NavTab>("flow");
+  const [activeTab, setActiveTab] = useState<NavTab>(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get("tab") as NavTab;
+      if (tabParam && ["flow", "focus", "growth", "sanctuary", "settings"].includes(tabParam)) {
+        return tabParam;
+      }
+    }
+    return "flow";
+  });
   const [flowView, setFlowView] = useState<"river" | "sunburst">("river");
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [isZenOpen, setIsZenOpen] = useState(false);
